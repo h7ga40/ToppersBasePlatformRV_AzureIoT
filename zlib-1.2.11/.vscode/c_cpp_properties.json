@@ -1,0 +1,15 @@
+{
+    "configurations": [
+        {
+            "name": "Sipeed Maix bit",
+            "includePath": [
+            ],
+            "windowsSdkVersion": "10.0.17763.0",
+            "compilerPath": "C:\\xpack-riscv-none-embed-gcc-8.3.0-1.2\\bin\\riscv-none-embed-gcc.exe",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64"
+        }
+    ],
+    "version": 4
+}

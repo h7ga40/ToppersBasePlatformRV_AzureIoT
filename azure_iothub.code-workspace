@@ -1,0 +1,32 @@
+{
+	"folders": [
+		{
+			"path": "app_iothub_client"
+		},
+		{
+			"path": "asp_baseplatform"
+		},
+		{
+			"path": "azure_iot_sdk"
+		},
+		{
+			"path": "wolfssl-4.4.0"
+		},
+		{
+			"path": "zlib-1.2.11"
+		}
+	],
+	"settings": {
+		"terminal.integrated.shell.windows": "C:\\msys64\\usr\\bin\\bash.exe",
+		"terminal.integrated.shellArgs.windows": [
+			"--login",
+			"-i"
+		],
+		"terminal.integrated.env.windows": {
+			"PATH": "C:\\xpack-riscv-none-embed-gcc-8.3.0-1.2\\bin",
+			"CHERE_INVOKING": "1",
+			"MSYS2_PATH_TYPE": "inherit",
+			"MSYSTEM": "MINGW64"
+		}
+	}
+}

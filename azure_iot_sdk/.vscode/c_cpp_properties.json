@@ -1,0 +1,34 @@
+{
+    "configurations": [
+        {
+            "name": "Sipeed Maix bit",
+            "includePath": [
+                "${workspaceFolder}/../asp_baseplatform/include",
+                "${workspaceFolder}/../asp_baseplatform/arch/gcc",
+                "${workspaceFolder}/../asp_baseplatform/arch/riscv_gcc",
+                "${workspaceFolder}/../asp_baseplatform/target/k210_gcc",
+                "${workspaceFolder}/../asp_baseplatform/OBJ/K210_GCC/DEMO",
+                "${workspaceFolder}/../azure_iot_sdk/c-utility/inc",
+                "${workspaceFolder}/../azure_iot_sdk/c-utility/pal/toppers",
+                "${workspaceFolder}/../azure_iot_sdk/iothub_client/inc",
+                "${workspaceFolder}/../azure_iot_sdk/iothub_client/inc/internal",
+                "${workspaceFolder}/../azure_iot_sdk/deps/parson",
+                "${workspaceFolder}/../azure_iot_sdk/umqtt/inc",
+                "${workspaceFolder}/../wolfssl-4.4.0/wolfssl",
+                "${workspaceFolder}/../wolfssl-4.4.0/wolfssl/wolfcrypt",
+                "${workspaceFolder}/../wolfssl-4.4.0",
+                "${workspaceFolder}/../zlib-1.2.11/src"
+            ],
+            "defines": [
+                "USE_WOLFSSL=1",
+                "get_time=azure_get_time"
+            ],
+            "windowsSdkVersion": "10.0.17763.0",
+            "compilerPath": "C:\\xpack-riscv-none-embed-gcc-8.3.0-1.2\\bin\\riscv-none-embed-gcc.exe",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64"
+        }
+    ],
+    "version": 4
+}

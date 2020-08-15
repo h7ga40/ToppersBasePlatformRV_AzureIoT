@@ -1,0 +1,44 @@
+{
+    "configurations": [
+        {
+            "name": "Sipeed Maix bit",
+            "includePath": [
+                "${workspaceFolder}/../asp_baseplatform",
+                "${workspaceFolder}/../asp_baseplatform/arch",
+                "${workspaceFolder}/../asp_baseplatform/arch/riscv_gcc",
+                "${workspaceFolder}/../asp_baseplatform/arch/gcc",
+                "${workspaceFolder}/../asp_baseplatform/files",
+                "${workspaceFolder}/../asp_baseplatform/files/ff",
+                "${workspaceFolder}/../asp_baseplatform/include",
+                "${workspaceFolder}/../asp_baseplatform/target/k210_gcc",
+                "${workspaceFolder}/../asp_baseplatform/pdic/k210",
+                "${workspaceFolder}/../asp_baseplatform/monitor",
+                "${workspaceFolder}/../wolfssl-4.4.0",
+                "${workspaceFolder}/../wolfssl-4.4.0/wolfssl",
+                "${workspaceFolder}/../wolfssl-4.4.0/wolfssl/wolfcrypt",
+                "${workspaceFolder}/../zlib-1.2.11/src",
+                "${workspaceFolder}/../azure_iot_sdk/c-utility/adapters",
+                "${workspaceFolder}/../azure_iot_sdk/c-utility/inc",
+                "${workspaceFolder}/../azure_iot_sdk/c-utility/pal/toppers",
+                "${workspaceFolder}/../azure_iot_sdk/certs",
+                "${workspaceFolder}/../azure_iot_sdk/deps",
+                "${workspaceFolder}/../azure_iot_sdk/deps/parson",
+                "${workspaceFolder}/../azure_iot_sdk/deps/azure-macro-utils-c/inc",
+                "${workspaceFolder}/../azure_iot_sdk/deps/umock-c/inc",
+                "${workspaceFolder}/../azure_iot_sdk/serializer/inc",
+                "${workspaceFolder}/../azure_iot_sdk/iothub_client/inc",
+                "${workspaceFolder}/../azure_iot_sdk/provisioning_client/inc",
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/Debug"
+            ],
+            "defines": [
+            ],
+            "windowsSdkVersion": "10.0.17763.0",
+            "compilerPath": "C:\\xpack-riscv-none-embed-gcc-8.3.0-1.2\\bin\\riscv-none-embed-gcc.exe",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64"
+        }
+    ],
+    "version": 4
+}

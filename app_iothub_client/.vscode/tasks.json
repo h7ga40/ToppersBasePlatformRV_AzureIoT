@@ -1,0 +1,187 @@
+{
+    "version": "2.0.0",
+    "name": "make",
+    "type": "shell",
+    "problemMatcher": {
+        "owner": "cpp",
+        "fileLocation": [
+            "relative",
+            "${workspaceFolder}/Debug"
+        ],
+        "pattern": {
+            "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error|fatal error):\\s+(.*)$",
+            "file": 1,
+            "line": 2,
+            "column": 3,
+            "severity": 4,
+            "message": 5
+        }
+    },
+    "tasks": [
+        {
+            "label": "build all",
+            "args": [
+                "-j",
+                "1",
+                "-C",
+                "..",
+                "all"
+            ],
+            "linux": {
+                "command": "make"
+            },
+            "osx": {
+                "command": "make"
+            },
+            "windows": {
+                "command": "make.exe"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "clean all",
+            "args": [
+                "-C",
+                "..",
+                "clean"
+            ],
+            "linux": {
+                "command": "make"
+            },
+            "osx": {
+                "command": "make"
+            },
+            "windows": {
+                "command": "make.exe"
+            },
+            "group": "build"
+        },
+        {
+            "label": "realclean all",
+            "args": [
+                "-C",
+                "..",
+                "realclean"
+            ],
+            "linux": {
+                "command": "make"
+            },
+            "osx": {
+                "command": "make"
+            },
+            "windows": {
+                "command": "make.exe"
+            },
+            "group": "build"
+        },
+        {
+            "label": "build app_iothub_client",
+            "args": [
+                "-j",
+                "1",
+                "all"
+            ],
+            "linux": {
+                "command": "make"
+            },
+            "osx": {
+                "command": "make"
+            },
+            "windows": {
+                "command": "make.exe"
+            },
+            "group": "build"
+        },
+        {
+            "label": "cfg app_iothub_client",
+            "args": [
+                "-j",
+                "1",
+                "kernel_cfg.h"
+            ],
+            "linux": {
+                "command": "make"
+            },
+            "osx": {
+                "command": "make"
+            },
+            "windows": {
+                "command": "make.exe"
+            },
+            "group": "build"
+        },
+        {
+            "label": "clean app_iothub_client",
+            "args": [
+                "clean"
+            ],
+            "linux": {
+                "command": "make"
+            },
+            "osx": {
+                "command": "make"
+            },
+            "windows": {
+                "command": "make.exe"
+            },
+            "group": "build"
+        },
+        {
+            "label": "realclean app_iothub_client",
+            "args": [
+                "realclean"
+            ],
+            "linux": {
+                "command": "make"
+            },
+            "osx": {
+                "command": "make"
+            },
+            "windows": {
+                "command": "make.exe"
+            },
+            "group": "build"
+        },
+        {
+            "label": "write app",
+            "linux": {
+                "command": "rsync",
+                "args": [
+                    "-av",
+                    "--progress",
+                    "${workspaceFolder}/Debug/app_iothub_client.bin",
+                    "/media/${env:USER}/NODE_F767ZI/"
+                ]
+            },
+            "osx": {
+                "command": "rsync",
+                "args": [
+                    "-av",
+                    "--progress",
+                    "${workspaceFolder}/Debug/app_iothub_client.bin",
+                    "/Volumes/NODE_F767ZI/"
+                ]
+            },
+            "windows": {
+                "command": "C:\\Windows\\System32\\robocopy.exe",
+                "args": [
+                    "${workspaceFolder}\\Debug",
+                    "G:\\",
+                    "app_iothub_client.bin"
+                ],
+                "options": {
+                    "shell": {
+                        "executable": "C:\\Windows\\System32\\cmd.exe",
+                        "args": [
+                            "/D",
+                            "/C"
+                        ]
+                    }
+                }
+            }
+        }
+    ]
+}

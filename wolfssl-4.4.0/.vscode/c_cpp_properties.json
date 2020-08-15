@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "Sipeed Maix bit",
+            "includePath": [
+                "${workspaceFolder}/../zlib-1.2.11/src",
+                "${workspaceFolder}/../wolfssl-4.4.0"
+            ],
+            "defines": [
+                "HAVE_CONFIG_H",
+                "WOLFSSL_USER_SETTINGS"
+            ],
+            "windowsSdkVersion": "10.0.17763.0",
+            "compilerPath": "C:\\xpack-riscv-none-embed-gcc-8.3.0-1.2\\bin\\riscv-none-embed-gcc.exe",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64"
+        }
+    ],
+    "version": 4
+}
