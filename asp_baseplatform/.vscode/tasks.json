@@ -67,6 +67,18 @@
                 "command": "make.exe"
             },
             "group": "build"
+        },
+        {
+            "label": "write asp_baseplatform",
+            "command": "/C/Python38/python.exe",
+            "args": [
+                "../tools/kflash/kflash.py",
+                "-p",
+                "COM12",
+                "-b",
+                "1500000",
+                "OBJ/K210_GCC/DEMO/asp.bin"
+            ]
         }
     ]
 }

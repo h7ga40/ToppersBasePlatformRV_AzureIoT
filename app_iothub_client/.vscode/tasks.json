@@ -146,42 +146,16 @@
             "group": "build"
         },
         {
-            "label": "write app",
-            "linux": {
-                "command": "rsync",
+            "label": "write app_iothub_client",
+            "command": "/C/Python38/python.exe",
                 "args": [
-                    "-av",
-                    "--progress",
-                    "${workspaceFolder}/Debug/app_iothub_client.bin",
-                    "/media/${env:USER}/NODE_F767ZI/"
-                ]
-            },
-            "osx": {
-                "command": "rsync",
-                "args": [
-                    "-av",
-                    "--progress",
-                    "${workspaceFolder}/Debug/app_iothub_client.bin",
-                    "/Volumes/NODE_F767ZI/"
-                ]
-            },
-            "windows": {
-                "command": "C:\\Windows\\System32\\robocopy.exe",
-                "args": [
-                    "${workspaceFolder}\\Debug",
-                    "G:\\",
-                    "app_iothub_client.bin"
-                ],
-                "options": {
-                    "shell": {
-                        "executable": "C:\\Windows\\System32\\cmd.exe",
-                        "args": [
-                            "/D",
-                            "/C"
-                        ]
-                    }
-                }
-            }
+                "../tools/kflash/kflash.py",
+                "-p",
+                "COM12",
+                "-b",
+                "1500000",
+                "Debug/app_iothub_client.bin"
+            ]
         }
     ]
 }
