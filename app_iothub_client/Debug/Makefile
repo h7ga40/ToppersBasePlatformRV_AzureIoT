@@ -55,10 +55,7 @@ TARGET = k210_gcc
 #
 SRCLANG = c
 ifeq ($(SRCLANG),c)
-	LIBS = -lc -lm \
-		$(SRCDIR)/../zlib-1.2.11/Debug/libzlib.a \
-		$(SRCDIR)/../wolfssl-4.4.0/Debug/libwolfssl.a \
-		$(SRCDIR)/../azure_iot_sdk/Debug/libazure_iot_sdk.a
+	LIBS = -lc -lm
 endif
 ifeq ($(SRCLANG),c++)
 	USE_CXX = true
@@ -153,26 +150,29 @@ CDEFS := $(CDEFS) -DUSE_WOLFSSL=1 -DHSM_TYPE_SYMM_KEY -DUSE_PROV_MODULE -Dget_ti
 INCLUDES := -I. -I$(SRCDIR)/include -I$(SRCDIR)/arch -I$(SRCDIR) $(INCLUDES)
 LDFLAGS := $(LDFLAGS) -Wl,--wrap=exit
 CFG1_OUT_LDFLAGS := $(CFG1_OUT_LDFLAGS) 
-LIBS := $(LIBS) $(CXXLIBS)
+LIBS := $(LIBS) $(CXXLIBS) \
+	$(SRCDIR)/../zlib-1.2.11/Debug/libzlib.a \
+	$(SRCDIR)/../wolfssl-4.4.0/Debug/libwolfssl.a \
+	$(SRCDIR)/../azure_iot_sdk/Debug/libazure_iot_sdk.a
 CFLAGS = $(COPTS) $(CDEFS) $(INCLUDES)
 
 #
 #  アプリケーションプログラムに関する定義
 #
 APPLNAME = app_iothub_client
-APPLDIR := $(APPLDIR) ../src
+APPLDIR := $(APPLDIR) ../src ../kendryte
 APPL_CFG = main.cfg
 
 APPL_DIR := $(APPLDIR) $(SRCDIR)/library
 APPL_ASMOBJS :=
 ifdef USE_CXX
 	APPL_CXXOBJS := $(APPL_CXXOBJS) main.o
-	APPL_COBJS := $(APPL_COBJS) client.o code.o envcmd.o command.o esp_at_socket.o
+	APPL_COBJS := $(APPL_COBJS) client.o code.o envcmd.o command.o esp_at_socket.o kpu_main.o region_layer.o kpu.o
 else
-	APPL_COBJS := $(APPL_COBJS) main.o client.o code.o envcmd.o command.o esp_at_socket.o
+	APPL_COBJS := $(APPL_COBJS) main.o client.o code.o envcmd.o command.o esp_at_socket.o kpu_main.o region_layer.o kpu.o
 endif
-APPL_COBJS := $(APPL_COBJS) log_output.o vasyslog.o t_perror.o strerror.o stub.o
-APPL_CFLAGS := $(APPL_CFLAGS)
+APPL_COBJS := $(APPL_COBJS) log_output.o vasyslog.o t_perror.o strerror.o stub.o yolo.o
+APPL_CFLAGS := $(APPL_CFLAGS) -D___src_yolo_kmodel=model_data -D___src_yolo_kmodel_len=model_size
 APPL_LIBS =
 ifdef APPLDIR
 	INCLUDES := $(INCLUDES) $(foreach dir,$(APPLDIR),-I$(dir))

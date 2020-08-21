@@ -78,7 +78,7 @@ svc_perror(const char *file, int_t line, const char *expr, ER ercd)
 
 #define	SVC_PERROR(expr)	svc_perror(__FILE__, __LINE__, #expr, (expr))
 
-/*static*/ uint32_t heap_area[256*1024];
+/*static*/ uint32_t heap_area[512*1024] __attribute((section(".heap")));
 
 intptr_t heap_param[2] = {
 	(intptr_t)heap_area,

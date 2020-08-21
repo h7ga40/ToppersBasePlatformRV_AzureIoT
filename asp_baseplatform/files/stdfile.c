@@ -259,7 +259,7 @@ int _stat(const char *name, struct stat *buf)
  */
 int lstat(const char *path, struct stat *buf)
 {
-  return stat(path, buf);
+  return _stat(path, buf);
 }
 
 /*
@@ -271,7 +271,7 @@ int access(const char *path, int mode)
   struct stat     buf;
   int             res = -1;
 
-  if(stat(path, &buf) >= 0){
+  if(_stat(path, &buf) >= 0){
     res = 0;
     if((mode & 0x02) != 0 && (buf.st_flags & 0x0001) != 0)	/* read only(no debug) */
       res = -1;

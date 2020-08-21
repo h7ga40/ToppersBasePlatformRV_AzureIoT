@@ -76,7 +76,40 @@ default_int_handler(unsigned long mcause, void *p_excinf)
 
 	if((long)mcause < 0)
 		excno += TMAX_MACHNE_INTNO / 2;
-	syslog(LOG_EMERG, "\nUnregistered Interrupt occurs.");
+
+	switch (excno) {
+	case EXC_INSTRUCTION_ADDRESS_MISALIGNED:
+		syslog(LOG_EMERG, "\nUnregistered instruction address misaligned occurs.");
+		break;
+	case EXC_INSTRUCTION_ADDRESS_FAULT:
+		syslog(LOG_EMERG, "\nUnregistered instruction address fault occurs.");
+		break;
+	case EXC_ILLEGAL_INSTRUCTION:
+		syslog(LOG_EMERG, "\nUnregistered illegal instruction occurs.");
+		break;
+	case EXC_BREAKPOINT:
+		syslog(LOG_EMERG, "\nUnregistered breakpoint occurs.");
+		break;
+	case EXC_LOAD_ADDRESS_MISALIGNED:
+		syslog(LOG_EMERG, "\nUnregistered load address misaligned occurs.");
+		break;
+	case EXC_LOAD_ADDRESS_FAULT:
+		syslog(LOG_EMERG, "\nUnregistered load address fault occurs.");
+		break;
+	case EXC_STORE_AMO_ADDRESS_MISALIGNED:
+		syslog(LOG_EMERG, "\nUnregistered store AMO address misaligned occurs.");
+		break;
+	case EXC_STORE_AMO_ACCESS_FAUT:
+		syslog(LOG_EMERG, "\nUnregistered store AMO access faut occurs.");
+		break;
+	case EXC_ENVIRONMENT_CALL_FROM_MMODE:
+		syslog(LOG_EMERG, "\nUnregistered environment call from MMODE occurs.");
+		break;
+	default:
+		syslog(LOG_EMERG, "\nUnregistered Interrupt occurs.");
+		break;
+	}
+
 	syslog(LOG_EMERG, "Excno = 0x%02X, PC = 0x%X, mstatus = 0x%X, p_excinf = 0x%X",
 		   excno, pc, mstatus, p_excinf);
 

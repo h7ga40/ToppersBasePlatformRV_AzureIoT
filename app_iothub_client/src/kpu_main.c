@@ -37,22 +37,7 @@
 *  アの利用により直接的または間接的に生じたいかなる損害に関しても，そ
 *  の責任を負わない．
 * 
-*  $Id: demo.c 2176 2020-08-19 23:50:05Z coas-nagasima $
-*/
-
-/* 
-*  K210 LEDデモプログラム
-*  このデモプログラムは、デフォルトでSDEV_SENSE_ONETIMEコンパイルが
-*  有効となっておりSDカード中に東雲漢字フォントが書き込まれて
-*  いることを前提としています。
-*  TOPPERS BASE PLATFORM(CV)中のui/snfont_dispディレクトリ中の
-*  以下のフォントをSDカードに書き込んで起動してください。
-*    shinonome_font12.fnt
-*    shinonome_font16.fnt
-*  プログラム中に漢字フォントをROMファイルして取り込んで漢字の表示も
-*  可能です。この場合、SDEV_SENSE_ONETIMEコンパイルスイッチを無効にし
-*  USE_ROMFONTコンパイルスイッチを有効にして、Makefile中に
-*  gdic/rom_file/Makefile.configを取り込んでビルドしてください。
+*  $Id: kpu_main.c 2176 2020-08-19 23:50:05Z coas-nagasima $
 */
 
 #include <kernel.h>
@@ -74,10 +59,11 @@
 #include "rom_file.h"
 #endif
 #include "kernel_cfg.h"
-#include "demo.h"
-#include "topamelogo.h"
+#include "kpu_main.h"
+#include "kpu.h"
+#include "region_layer.h"
 
-#define IOMEM 0x40000000
+extern void ai_dma_done_isr(DMA_Handle_t *dma);
 
 /*
 *  サービスコールのエラーのログ出力
@@ -98,39 +84,7 @@ svc_perror(const char *file, int_t line, const char *expr, ER ercd)
 #define SPI1DMATX_SEM   0
 #endif
 
-#if !defined(NOT_USEFILFONT)
-static const char string1[] = {
-	'T', 'O', 'P', 'P', 'E', 'R', 'S',0xE3,0x83,0x97,0xE3,0x83,0xAD,0xE3,0x82,0xB8,
-	0xE3,0x82,0xA7,0xE3,0x82,0xAF,0xE3,0x83,0x88,0
-};
-static const char string2[] = {
-	0xE6,0x95,0x99,0xE8,0x82,0xB2,0xE3,0x83,0xAF,0xE3,0x83,0xBC,0xE3,0x82,0xAD,
-	0xE3,0x83,0xB3,0xE3,0x82,0xB0,0xE3,0x83,0xAB,0xE3,0x83,0xBC,0xE3,0x83,0x97,0
-};
-#else
-static const char string1[] = "TOPPERS PROJECT";
-static const char string2[] = "Educational Working Group.";
-#endif
-
-static uint32_t heap_area[256*1024];
-
-intptr_t heap_param[2] = {
-	(intptr_t)heap_area,
-	sizeof(heap_area)
-};
-
-/*
-*  使用する変数の定義
-*/
-static const Point testPolygon[7] = {
-	{0, 0},
-	{319, 239},
-	{160, 0},
-	{160, 239},
-	{319, 0},
-	{0, 239},
-	{0, 0}
-};
+#define CLASS_NUMBER 20
 
 LCD_Handler_t  LcdHandle;
 LCD_DrawProp_t DrawProp;
@@ -158,7 +112,6 @@ set_time(uint8_t *buf, struct tm2 *tm)
 	buf[2] = ':';
 	set_value(&buf[0], tm->tm_hour);
 }
-
 
 /*
 *  ダイレクトデジタルピン設定
@@ -196,78 +149,84 @@ pinMode(uint8_t Pin, uint8_t dwMode){
 	return ;
 }
 
-/*
-*  ダイレクトデジタルピン出力
-*/
-void
-digitalWrite(uint8_t Pin, int dwVal){
-	int8_t gpio_pin = gpio_get_gpiohno(Pin, false);
+void digitalWrite(uint8_t Pin, int dwVal);
 
-	if( gpio_pin >= 0){
-		gpio_set_pin(TADR_GPIOHS_BASE, (uint8_t)gpio_pin, dwVal);
-	}
+#if (CLASS_NUMBER > 1)
+typedef struct
+{
+	char *str;
+	uint16_t color;
+	uint16_t height;
+	uint16_t width;
+} class_lable_t;
+
+class_lable_t class_lable[CLASS_NUMBER] =
+{
+	{"aeroplane", ST7789_GREEN},
+	{"bicycle", ST7789_GREEN},
+	{"bird", ST7789_GREEN},
+	{"boat", ST7789_GREEN},
+	{"bottle", 0xF81F},
+	{"bus", ST7789_GREEN},
+	{"car", ST7789_GREEN},
+	{"cat", ST7789_GREEN},
+	{"chair", 0xFD20},
+	{"cow", ST7789_GREEN},
+	{"diningtable", ST7789_GREEN},
+	{"dog", ST7789_GREEN},
+	{"horse", ST7789_GREEN},
+	{"motorbike", ST7789_GREEN},
+	{"person", 0xF800},
+	{"pottedplant", ST7789_GREEN},
+	{"sheep", ST7789_GREEN},
+	{"sofa", ST7789_GREEN},
+	{"train", ST7789_GREEN},
+	{"tvmonitor", 0xF9B6}
+};
+
+static uint32_t lable_string_draw_ram[115 * 16 * 8 / 2];
+#endif
+extern uint8_t model_data[];
+kpu_model_context_t g_task;
+static region_layer_t detect_rl;
+
+volatile uint8_t g_ai_done_flag;
+
+void ai_done(void *ctx)
+{
+	g_ai_done_flag = 2;
 }
 
-/*
-*  周期ハンドラ
-*/
-void cyclic_handler(intptr_t exinf)
+#define ANCHOR_NUM 5
+float g_anchor[ANCHOR_NUM * 2] = {1.08, 1.19, 3.42, 4.41, 6.63, 11.38, 9.42, 5.11, 16.62, 10.52};
+
+static void drawboxes(uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2, uint32_t class, float prob)
 {
-	static bool_t b = 0;
-	b ^= 1;
+	if (x1 >= 320)
+		x1 = 319;
+	if (x2 >= 320)
+		x2 = 319;
+	if (y1 >= 240)
+		y1 = 239;
+	if (y2 >= 240)
+		y2 = 239;
 
-	digitalWrite(LED_PIN, b);
-}
-
-/*
-*  グラフィック表示テスト
-*/
-void
-grapics_test(LCD_Handler_t *hlcd)
-{
-	uint16_t x, y;
-	int      i;
-
-	DrawProp.BackColor = ST7789_BLACK;
-	lcd_fillScreen(&DrawProp);
-	dly_tsk(1000);
-	lcd_drawPixel(hlcd, hlcd->_width/2, hlcd->_height/2, ST7789_GREEN);
-	dly_tsk(1000);
-
-	lcd_fillScreen(&DrawProp);
-	for(y=0; y < hlcd->_height; y+=5) {
-		lcd_drawFastHLine(hlcd, 0, y, hlcd->_width, ST7789_RED);
-	}
-	for (x=0; x < hlcd->_width; x+=5) {
-		lcd_drawFastVLine(hlcd, x, 0, hlcd->_height, ST7789_BLUE);
-	}
-	dly_tsk(1000);
-
-	lcd_fillScreen(&DrawProp);
-	DrawProp.TextColor = ST7789_GREEN;
-	lcd_drawPolygon(&DrawProp, (Point *)testPolygon, sizeof(testPolygon)/sizeof(Point));
-	dly_tsk(1000);
-
-	lcd_fillScreen(&DrawProp);
-	DrawProp.TextColor = ST7789_GREEN;
-	for (y=0; y < hlcd->_height; y+=6) {
-		lcd_drawRect(&DrawProp, hlcd->_width/2 -y/2, hlcd->_height/2 -y/2 , y, y);
-	}
-	for(i = 0 ; i < 3 ; i++){
-		lcd_invertDisplay(hlcd, true);
-		dly_tsk(500);
-		lcd_invertDisplay(hlcd, false);
-		dly_tsk(500);
-	}
-	lcd_fillScreen(&DrawProp);
-	lcd_drawBitmap(hlcd, 33, 48, (uint8_t *)topamelogo);
-	dly_tsk(1000);
+#if (CLASS_NUMBER > 1)
+	DrawProp.TextColor = class_lable[class].color;
+	lcd_drawRect(&DrawProp, x1, y1, x2-x1, y2-y1);
+	DrawProp.TextColor = ST7789_WHITE;
+	DrawProp.BackColor = class_lable[class].color;
+	DrawProp.pFont = &Font12;
+	lcd_DisplayStringAt(&DrawProp, x1 + 1, y1 + 1, class_lable[class].str, LEFT_MODE);
+#else
+	lcd_drawRect(&DrawProp, x1, y1, x2, y2, 2, ST7789_RED);
+#endif
 }
 
 /*
 *  メインタスク
 */
-void main_task(intptr_t exinf)
+void kpu_task(intptr_t exinf)
 {
 	SPI_Init_t Init;
 	SPI_Handle_t    *hspi;
@@ -290,23 +249,7 @@ void main_task(intptr_t exinf)
 	SVC_PERROR(syslog_msk_log(LOG_UPTO(LOG_INFO), LOG_UPTO(LOG_EMERG)));
 	syslog(LOG_NOTICE, "Sample program starts (exinf = %d).", (int_t) exinf);
 
-	/*
-	*  シリアルポートの初期化
-	*
-	*  システムログタスクと同じシリアルポートを使う場合など，シリアル
-	*  ポートがオープン済みの場合にはここでE_OBJエラーになるが，支障は
-	*  ない．
-	*/
-	ercd = serial_opn_por(TASK_PORTID);
-	if (ercd < 0 && MERCD(ercd) != E_OBJ) {
-		syslog(LOG_ERROR, "%s (%d) reported by `serial_opn_por'.",
-									itron_strerror(ercd), SERCD(ercd));
-	}
-	SVC_PERROR(serial_ctl_por(TASK_PORTID,
-							(IOCTL_CRLF | IOCTL_FCSND | IOCTL_FCRCV)));
-
 	pinMode(LED_PIN, OUTPUT);
-	SVC_PERROR(sta_cyc(CYCHDR1));
 
 	select_spi0_dvp_mode(1);
 
@@ -522,82 +465,102 @@ void main_task(intptr_t exinf)
 	if(hsd == NULL)
 		syslog_0(LOG_ERROR, "SD-CARD INITAIL ERROR !");
 #endif
+	extern DMA_Handle_t g_ai_hdma;
+	g_ai_hdma.chnum = AI_DMA_CH;
+	g_ai_hdma.xfercallback = ai_dma_done_isr;
+	g_ai_hdma.errorcallback     = NULL;
+	g_ai_hdma.Init.Request      = DMA_SELECT_AI_RX_REQ;	/* DMA選択 */
+	g_ai_hdma.Init.Direction    = DMA_PERIPH_TO_MEMORY;	/* DMA転送方向 */
+	g_ai_hdma.Init.SrcMultBlock = DMAC_MULTBLOCK_CONT;	/* ソースマルチブロックタイプ */
+	g_ai_hdma.Init.DrcMultBlock = DMAC_MULTBLOCK_CONT;	/* デスティネーションマルチブロックタイプ */
+	g_ai_hdma.Init.SrcHandShake = DMAC_HS_HARDWARE;	/* ソースハンドシェイク */
+	g_ai_hdma.Init.DrcHandShake = DMAC_HS_SOFTWARE;	/* デスティネーションハンドシェイク */
+	g_ai_hdma.Init.SrcHwhsPol   = DMAC_HWHS_POLARITY_LOW;	/* ソースハードウェアハンドシェイク極性 */
+	g_ai_hdma.Init.DrcHwhsPol   = DMAC_HWHS_POLARITY_LOW;	/* デスティネーションハードウェアハンドシェイク極性 */
+	g_ai_hdma.Init.Priority     = 4;	/* 優先度 */
+	g_ai_hdma.Init.SrcMaster    = DMAC_MASTER1;	/* ソースマスター設定 */
+	g_ai_hdma.Init.DstMaster    = DMAC_MASTER2;	/* デスティネーションマスター設定 */
+	g_ai_hdma.Init.SrcInc       = DMAC_ADDR_NOCHANGE;	/* ソースインクリメント設定 */
+	g_ai_hdma.Init.DstInc       = DMAC_ADDR_INCREMENT;	/* デスティネーションインクリメント設定 */
+	g_ai_hdma.Init.SrcTransWidth = DMAC_TRANS_WIDTH_32;	/* ソース転送幅 */
+	g_ai_hdma.Init.DstTransWidth = DMAC_TRANS_WIDTH_32;	/* デスティネーション転送幅 */
+	g_ai_hdma.Init.SrcBurstSize = DMAC_MSIZE_4;	/* ソースバーストサイズ */
+	g_ai_hdma.Init.DstBurstSize = DMAC_MSIZE_4;	/* デスティネーションバーストサイズ */
+	g_ai_hdma.Init.IocBlkTrans  = 0;	/* IOCブロック転送 */
+	g_ai_hdma.localdata         = (void *)&g_task;
+	if ((ercd = dma_init(&g_ai_hdma)) != E_OK) {
+		syslog_0(LOG_ERROR, "AI-DMA INITAIL ERROR !");
+	}
 
-	for(;;){
-		DrawProp.BackColor = ST7789_WHITE;
-		DrawProp.TextColor = ST7789_BLACK;
-		lcd_fillScreen(&DrawProp);
-		lcd_fillRect(hlcd, 0, 0, hlcd->_width, (hlcd->_height/3)*2-20, ST7789_BLUE);
-		DrawProp.TextColor = ST7789_WHITE;
-		DrawProp.BackColor = ST7789_BLUE;
-		DrawProp.pFont = &Font16;
-		lcd_DisplayStringAt(&DrawProp, 0, 16, (uint8_t *)string1, CENTER_MODE);
-		lcd_DisplayStringAt(&DrawProp, 0, 40, (uint8_t *)string2, CENTER_MODE);
-		lcd_DisplayStringAt(&DrawProp, 0, 64, (uint8_t *)"TOPPERS BASE PLATFORM(RV)", CENTER_MODE);
+	if (kpu_load_kmodel(&g_task, model_data) != 0) {
+		syslog_0(LOG_ERROR, "kmodel init error");
+		slp_tsk();
+	}
 
-		DrawProp.TextColor = ST7789_GREEN;
-		lcd_DisplayStringAt(&DrawProp, 0, 88, (uint8_t *)"TOPPERS/ASP Kernel", CENTER_MODE);
-		DrawProp.TextColor = ST7789_RED;
-		lcd_DisplayStringAt(&DrawProp, 0, 112, (uint8_t *)"RISC-V/64 K210", CENTER_MODE);
-		lcd_drawBitmap(hlcd, hlcd->_width/2-30, (hlcd->_height/3)*2, (uint8_t *)topamelogo);
-		dly_tsk(5000);
+	detect_rl.anchor_number = ANCHOR_NUM;
+	detect_rl.anchor = g_anchor;
+	detect_rl.threshold = 0.7;
+	detect_rl.nms_value = 0.3;
+	region_layer_init(&detect_rl, 10, 7, 125, 320, 240);
 
-		DrawProp.BackColor = ST7789_BLACK;
-		DrawProp.TextColor = ST7789_WHITE;
-		grapics_test(hlcd);
+	bool_t camok = true;
+	if((ercd = ov2640_activate(hcmr, true)) != E_OK){
+		syslog_2(LOG_NOTICE, "ov2640 activate error result(%d) id(%d) ##", ercd, ov2640_id(hcmr));
+		camok = false;
+	}
 
-		DrawProp.TextColor = ST7789_BLACK;
-		DrawProp.BackColor = ST7789_WHITE;
-		lcd_fillScreen(&DrawProp);
-		lcd_fillRect(hlcd, 0, 0, hlcd->_width, hlcd->_height/3, ST7789_BLUE);
-		DrawProp.TextColor = ST7789_WHITE;
-		DrawProp.BackColor = ST7789_BLUE;
-		DrawProp.pFont = &Font16;
-		lcd_DisplayStringAt(&DrawProp, 0, 16, (uint8_t *)"TOPPERS BASE PLATFORM TEST", CENTER_MODE);
-
-		DrawProp.TextColor = ST7789_BLACK;
-		DrawProp.BackColor = ST7789_WHITE;
-		DrawProp.pFont = &Font8;
-		lcd_DisplayStringAt(&DrawProp, 0, 100, (uint8_t *)"Helle World !", CENTER_MODE);
-		DrawProp.pFont = &Font12;
-		lcd_DisplayStringAt(&DrawProp, 0, 120, (uint8_t *)"Helle World !", CENTER_MODE);
-		DrawProp.pFont = &Font16;
-		lcd_DisplayStringAt(&DrawProp, 0, 140, (uint8_t *)"Helle World !", CENTER_MODE);
-
-		DrawProp.TextColor = ST7789_RED;
-		for(i = 20 ; i < 80 ; i++){
-			lcd_DrawCircle(&DrawProp, hlcd->_width/2, hlcd->_height/2+30, i);
-			if(i == 25)
-				i += 10;
-		}
-		for(i = 0 ; i < 30 ; i++){
-			rtc_get_time(&time);
-			set_time(time_string, &time);
-			lcd_DisplayStringAt(&DrawProp, 0, 160, time_string, CENTER_MODE);
-			dly_tsk(1000);
-		}
-
-		if((ercd = ov2640_activate(hcmr, true)) != E_OK){
-			syslog_2(LOG_NOTICE, "ov2640 activate error result(%d) id(%d) ##", ercd, ov2640_id(hcmr));
-			continue;
-		}
-
-		for(i = 0 ; i < 2000 ; i++){
-			if((i % 100) == 0)
-				syslog_1(LOG_NOTICE, "camera count(%d)", i);
+	int tmo = 0;
+	g_ai_done_flag = 0;
+	while (camok) {
+		if (g_ai_done_flag == 0) {
 			ercd = ov2640_snapshot(hcmr);
-			if(ercd == E_OK){
-				uint32_t *p = (uint32_t *)hcmr->_dataBuffer;
-				uint32_t *q = (uint32_t *)lcd_buffer;
-				uint32_t *e = (uint32_t *)&lcd_buffer[count];
-				for (; q < e ; p++, q++){
-					*q = SWAP_32(*p);
-				}
-				lcd_drawPicture(hlcd, 0, 0, hcmr->_width, hcmr->_height, lcd_buffer);
+			if (ercd != E_OK) {
+				camok = false;
+				continue;
+			}
+			g_ai_done_flag = 1;
+
+			/* start to calculate */
+			atmp = (unsigned long)hcmr->_aiBuffer - IOMEM;
+			kpu_run_kmodel(&g_task, (const uint8_t *)atmp, AI_DMA_CH, ai_done, NULL);
+
+			uint32_t *p = (uint32_t *)hcmr->_dataBuffer;
+			uint32_t *q = (uint32_t *)lcd_buffer;
+			uint32_t *e = (uint32_t *)&lcd_buffer[count];
+			for (; q < e ; p++, q++){
+				*q = SWAP_32(*p);
 			}
 		}
-		ov2640_activate(hcmr, false);
+
+		if (g_ai_done_flag == 1) {
+			tmo++;
+			if (tmo >= 10) {
+				tmo = 0;
+				g_ai_done_flag = 0;
+			}
+			else {
+				dly_tsk(1);
+			}
+			continue;
+		}
+		else if (g_ai_done_flag == 2) {
+			g_ai_done_flag = 0;
+			float *output;
+			size_t output_size;
+			kpu_get_output(&g_task, 0, &output, &output_size);
+			detect_rl.input = output;
+
+			/* start region layer */
+			region_layer_run(&detect_rl, NULL);
+		}
+
+		lcd_drawPicture(hlcd, 0, 0, hcmr->_width, hcmr->_height, lcd_buffer);
+
+		/* draw boxs */
+		region_layer_draw_boxes(&detect_rl, drawboxes);
 	}
+	ov2640_activate(hcmr, false);
+
 	syslog_0(LOG_NOTICE, "## STOP ##");
 	slp_tsk();
 	syslog(LOG_NOTICE, "Sample program ends.");

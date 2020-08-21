@@ -280,7 +280,7 @@ $
 $IF !ISFUNCTION("ALLOC_STACK")$
 $FUNCTION ALLOC_STACK$
 $	// 大きい方に丸めたサイズで確保する
-	/*static*/ STK_T $ARGV[1]$[COUNT_STK_T($ARGV[2]$)] __attribute__((section(".stack")));$NL$
+	/*static*/ STK_T $ARGV[1]$[COUNT_STK_T($ARGV[2]$)] __attribute__((section(".stack"),aligned(16)));$NL$
 	$RESULT = FORMAT("ROUND_STK_T(%1%)", ARGV[2])$
 $END$
 $END$

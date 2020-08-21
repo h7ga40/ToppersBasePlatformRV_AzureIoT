@@ -84,7 +84,7 @@
  *  デフォルトの非タスクコンテキスト用のスタック領域の定義
  */
 #define DEFAULT_ISTKSZ		0x4000U
-#define DEFAULT_ISTK		(void *)(RAM_BASE_ADDR + RAM_SIZE - DEFAULT_ISTKSZ * 2)
+//#define DEFAULT_ISTK		(void *)(RAM_BASE_ADDR + RAM_SIZE - DEFAULT_ISTKSZ * 2)
 
 
 #ifndef TOPPERS_MACRO_ONLY
