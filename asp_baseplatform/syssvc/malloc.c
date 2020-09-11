@@ -306,9 +306,10 @@ __malloc_lock(void * reent)
 	if (malloc_lock_count == 1){
 		ER ret;
 		if (sense_context())
-			ret = iloc_cpu();
+			//ret = iloc_cpu();
+			ret = E_CTX;
 		else
-			ret = loc_cpu();
+			ret = wai_sem(MALLOC_SEM);
 		if (ret != E_OK)
 			syslog_1(LOG_ERROR, "__malloc_unlock: count[%d] loc_cpu", malloc_lock_count);
 	}
@@ -321,9 +322,10 @@ __malloc_unlock(void * reent)
 	if (malloc_lock_count == 0){
 		ER ret;
 		if (sense_context())
-			ret = iunl_cpu();
+			//ret = iunl_cpu();
+			ret = E_CTX;
 		else
-			ret = unl_cpu();
+			ret = sig_sem(MALLOC_SEM);
 		if (ret != E_OK)
 			syslog_1(LOG_ERROR, "__malloc_unlock: count[%d] unl_cpu error !", malloc_lock_count);
 	}

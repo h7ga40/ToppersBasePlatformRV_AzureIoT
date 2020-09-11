@@ -54,8 +54,7 @@
  *  各タスクの優先度の定義
  */
 
-#define KPU_PRIORITY	5		/* メインタスクの優先度 */
-								/* HIGH_PRIORITYより高くすること */
+#define KPU_PRIORITY	6		/* メインタスクの優先度 */
 
 /*
  *  ターゲットに依存する可能性のある定数の定義
@@ -91,36 +90,36 @@
 #define SPI_PORTID    SPI1_PORTID
 #define INHNO_SPI     IRQ_VECTOR_SPI0	/* 割込みハンドラ番号 */
 #define INTNO_SPI     IRQ_VECTOR_SPI0	/* 割込み番号 */
-#define INTPRI_SPI    -5		/* 割込み優先度 */
+#define INTPRI_SPI    -6		/* 割込み優先度 */
 #define INTATR_SPI    0			/* 割込み属性 */
 
 #define SIPEED_DMA_CH DMA_CHANNEL3
 #define INHNO_DMATX   IRQ_VECTOR_DMA3	/* 割込みハンドラ番号 */
 #define INTNO_DMATX   IRQ_VECTOR_DMA3	/* 割込み番号 */
-#define INTPRI_DMATX  -4		/* 割込み優先度 */
+#define INTPRI_DMATX  -6		/* 割込み優先度 */
 #define INTATR_DMATX  0			/* 割込み属性 */
 
 #define SPICARD_PORTID SPI2_PORTID
 #define INHNO_SPIC    IRQ_VECTOR_SPI1	/* 割込みハンドラ番号 */
 #define INTNO_SPIC    IRQ_VECTOR_SPI1	/* 割込み番号 */
-#define INTPRI_SPIC   -5		/* 割込み優先度 */
+#define INTPRI_SPIC   -6		/* 割込み優先度 */
 #define INTATR_SPIC   0			/* 割込み属性 */
 
 #define SPI_DMA1_CH   DMA_CHANNEL2
 #define INHNO_DMARX   IRQ_VECTOR_DMA2	/* 割込みハンドラ番号 */
 #define INTNO_DMARX   IRQ_VECTOR_DMA2	/* 割込み番号 */
-#define INTPRI_DMARX  -4		/* 割込み優先度 */
+#define INTPRI_DMARX  -6		/* 割込み優先度 */
 #define INTATR_DMARX  0			/* 割込み属性 */
 
 #define INHNO_AI      IRQ_VECTOR_AI	/* 割込みハンドラ番号 */
 #define INTNO_AI      IRQ_VECTOR_AI	/* 割込み番号 */
-#define INTPRI_AI     -4		/* 割込み優先度 */
+#define INTPRI_AI     -7		/* 割込み優先度 */
 #define INTATR_AI     0			/* 割込み属性 */
 
 #define AI_DMA_CH     DMA_CHANNEL5
 #define INHNO_DMAAI   IRQ_VECTOR_DMA5	/* 割込みハンドラ番号 */
 #define INTNO_DMAAI   IRQ_VECTOR_DMA5	/* 割込み番号 */
-#define INTPRI_DMAAI  -4		/* 割込み優先度 */
+#define INTPRI_DMAAI  -7		/* 割込み優先度 */
 #define INTATR_DMAAI  0			/* 割込み属性 */
 
 #define HIGH 0x1

@@ -21,23 +21,23 @@ extern "C" {
 #endif
 
 #define SPINLOCK_INIT \
-    {                 \
-        0             \
-    }
+	{                 \
+		0             \
+	}
 
 #define CORELOCK_INIT          \
-    {                          \
-        .lock = SPINLOCK_INIT, \
-        .count = 0,            \
-        .core = -1             \
-    }
+	{                          \
+		.lock = SPINLOCK_INIT, \
+		.count = 0,            \
+		.core = -1             \
+	}
 
 /* Defination of memory barrier macro */
 #define mb()                          \
-    {                                 \
-        asm volatile("fence" ::       \
-                         : "memory"); \
-    }
+	{                                 \
+		asm volatile("fence" ::       \
+						 : "memory"); \
+	}
 
 #define atomic_set(ptr, val) (*(volatile typeof(*(ptr)) *)(ptr) = val)
 #define atomic_read(ptr) (*(volatile typeof(*(ptr)) *)(ptr))
@@ -52,181 +52,181 @@ extern "C" {
 
 typedef struct _spinlock
 {
-    int lock;
+	int lock;
 } spinlock_t;
 
 typedef struct _semaphore
 {
-    spinlock_t lock;
-    int count;
-    int waiting;
+	spinlock_t lock;
+	int count;
+	int waiting;
 } semaphore_t;
 
 typedef struct _corelock
 {
-    spinlock_t lock;
-    int count;
-    int core;
+	spinlock_t lock;
+	int count;
+	int core;
 } corelock_t;
 
 static inline int spinlock_trylock(spinlock_t *lock)
 {
-    int res = atomic_swap(&lock->lock, -1);
-    /* Use memory barrier to keep coherency */
-    mb();
-    return res;
+	int res = atomic_swap(&lock->lock, -1);
+	/* Use memory barrier to keep coherency */
+	mb();
+	return res;
 }
 
 static inline void spinlock_lock(spinlock_t *lock)
 {
-    while(spinlock_trylock(lock))
-        ;
+	while(spinlock_trylock(lock))
+		;
 }
 
 static inline void spinlock_unlock(spinlock_t *lock)
 {
-    /* Use memory barrier to keep coherency */
-    mb();
-    atomic_set(&lock->lock, 0);
-    asm volatile("nop");
+	/* Use memory barrier to keep coherency */
+	mb();
+	atomic_set(&lock->lock, 0);
+	asm volatile("nop");
 }
 
 static inline void semaphore_signal(semaphore_t *semaphore, int i)
 {
-    spinlock_lock(&(semaphore->lock));
-    semaphore->count += i;
-    spinlock_unlock(&(semaphore->lock));
+	spinlock_lock(&(semaphore->lock));
+	semaphore->count += i;
+	spinlock_unlock(&(semaphore->lock));
 }
 
 static inline void semaphore_wait(semaphore_t *semaphore, int i)
 {
-    atomic_add(&(semaphore->waiting), 1);
-    while(1)
-    {
-        spinlock_lock(&(semaphore->lock));
-        if(semaphore->count >= i)
-        {
-            semaphore->count -= i;
-            atomic_add(&(semaphore->waiting), -1);
-            spinlock_unlock(&(semaphore->lock));
-            break;
-        }
-        spinlock_unlock(&(semaphore->lock));
-    }
+	atomic_add(&(semaphore->waiting), 1);
+	while(1)
+	{
+		spinlock_lock(&(semaphore->lock));
+		if(semaphore->count >= i)
+		{
+			semaphore->count -= i;
+			atomic_add(&(semaphore->waiting), -1);
+			spinlock_unlock(&(semaphore->lock));
+			break;
+		}
+		spinlock_unlock(&(semaphore->lock));
+	}
 }
 
 static inline int semaphore_count(semaphore_t *semaphore)
 {
-    int res = 0;
+	int res = 0;
 
-    spinlock_lock(&(semaphore->lock));
-    res = semaphore->count;
-    spinlock_unlock(&(semaphore->lock));
-    return res;
+	spinlock_lock(&(semaphore->lock));
+	res = semaphore->count;
+	spinlock_unlock(&(semaphore->lock));
+	return res;
 }
 
 static inline int semaphore_waiting(semaphore_t *semaphore)
 {
-    return atomic_read(&(semaphore->waiting));
+	return atomic_read(&(semaphore->waiting));
 }
 
 static inline int corelock_trylock(corelock_t *lock)
 {
-    int res = 0;
-    unsigned long core;
+	int res = 0;
+	unsigned long core;
 
-    asm volatile("csrr %0, mhartid;"
-                 : "=r"(core));
-    if(spinlock_trylock(&lock->lock))
-    {
-        return -1;
-    }
+	asm volatile("csrr %0, mhartid;"
+				 : "=r"(core));
+	if(spinlock_trylock(&lock->lock))
+	{
+		return -1;
+	}
 
-    if(lock->count == 0)
-    {
-        /* First time get lock */
-        lock->count++;
-        lock->core = core;
-        res = 0;
-    } else if(lock->core == core)
-    {
-        /* Same core get lock */
-        lock->count++;
-        res = 0;
-    } else
-    {
-        /* Different core get lock */
-        res = -1;
-    }
-    spinlock_unlock(&lock->lock);
+	if(lock->count == 0)
+	{
+		/* First time get lock */
+		lock->count++;
+		lock->core = core;
+		res = 0;
+	} else if(lock->core == core)
+	{
+		/* Same core get lock */
+		lock->count++;
+		res = 0;
+	} else
+	{
+		/* Different core get lock */
+		res = -1;
+	}
+	spinlock_unlock(&lock->lock);
 
-    return res;
+	return res;
 }
 
 static inline void corelock_lock(corelock_t *lock)
 {
-    unsigned long core;
+	unsigned long core;
 
-    asm volatile("csrr %0, mhartid;"
-                 : "=r"(core));
-    spinlock_lock(&lock->lock);
+	asm volatile("csrr %0, mhartid;"
+				 : "=r"(core));
+	spinlock_lock(&lock->lock);
 
-    if(lock->count == 0)
-    {
-        /* First time get lock */
-        lock->count++;
-        lock->core = core;
-    } else if(lock->core == core)
-    {
-        /* Same core get lock */
-        lock->count++;
-    } else
-    {
-        /* Different core get lock */
-        spinlock_unlock(&lock->lock);
+	if(lock->count == 0)
+	{
+		/* First time get lock */
+		lock->count++;
+		lock->core = core;
+	} else if(lock->core == core)
+	{
+		/* Same core get lock */
+		lock->count++;
+	} else
+	{
+		/* Different core get lock */
+		spinlock_unlock(&lock->lock);
 
-        do
-        {
-            while(atomic_read(&lock->count))
-                ;
-        } while(corelock_trylock(lock));
-        return;
-    }
-    spinlock_unlock(&lock->lock);
+		do
+		{
+			while(atomic_read(&lock->count))
+				;
+		} while(corelock_trylock(lock));
+		return;
+	}
+	spinlock_unlock(&lock->lock);
 }
 
 static inline void corelock_unlock(corelock_t *lock)
 {
-    unsigned long core;
+	unsigned long core;
 
-    asm volatile("csrr %0, mhartid;"
-                 : "=r"(core));
-    spinlock_lock(&lock->lock);
+	asm volatile("csrr %0, mhartid;"
+				 : "=r"(core));
+	spinlock_lock(&lock->lock);
 
-    if(lock->core == core)
-    {
-        /* Same core release lock */
-        lock->count--;
-        if(lock->count <= 0)
-        {
-            lock->core = -1;
-            lock->count = 0;
-        }
-    } else
-    {
-        /* Different core release lock */
-        spinlock_unlock(&lock->lock);
+	if(lock->core == core)
+	{
+		/* Same core release lock */
+		lock->count--;
+		if(lock->count <= 0)
+		{
+			lock->core = -1;
+			lock->count = 0;
+		}
+	} else
+	{
+		/* Different core release lock */
+		spinlock_unlock(&lock->lock);
 
-        register unsigned long a7 asm("a7") = 93;
-        register unsigned long a0 asm("a0") = 0;
-        register unsigned long a1 asm("a1") = 0;
-        register unsigned long a2 asm("a2") = 0;
+		register unsigned long a7 asm("a7") = 93;
+		register unsigned long a0 asm("a0") = 0;
+		register unsigned long a1 asm("a1") = 0;
+		register unsigned long a2 asm("a2") = 0;
 
-        asm volatile("scall"
-                     : "+r"(a0)
-                     : "r"(a1), "r"(a2), "r"(a7));
-    }
-    spinlock_unlock(&lock->lock);
+		asm volatile("scall"
+					 : "+r"(a0)
+					 : "r"(a1), "r"(a2), "r"(a7));
+	}
+	spinlock_unlock(&lock->lock);
 }
 
 #ifdef __cplusplus

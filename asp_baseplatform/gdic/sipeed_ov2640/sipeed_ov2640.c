@@ -749,7 +749,7 @@ ov2640_snapshot(OV2640_t *hcmr)
 		else
 			dly_tsk(1);
 	}
-	reverse_u32pixel((uint32_t*)hcmr->_dataBuffer, hcmr->_width * hcmr->_height/2);
+	//reverse_u32pixel((uint32_t*)hcmr->_dataBuffer, hcmr->_width * hcmr->_height/2);
 	return E_OK;
 }
 

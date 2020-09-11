@@ -53,8 +53,7 @@
  *  各タスクの優先度の定義
  */
 
-#define MAIN_PRIORITY	8		/* メインタスクの優先度 */
-								/* HIGH_PRIORITYより高くすること */
+#define MAIN_PRIORITY	5		/* メインタスクの優先度 */
 
 /*
  *  ターゲットに依存する可能性のある定数の定義

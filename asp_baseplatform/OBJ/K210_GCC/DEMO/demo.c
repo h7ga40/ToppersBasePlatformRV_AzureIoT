@@ -274,9 +274,8 @@ void main_task(intptr_t exinf)
 	LCD_Handler_t   *hlcd;
 	OV2640_t        *hcmr;
 	DVP_Handle_t    *hdvp;
-	uint16_t        *lcd_buffer;
 	ER_UINT	ercd;
-	uint32_t i, count;
+	uint32_t i;
 	struct tm2 time;
 	unsigned long atmp;
 #ifdef SDEV_SENSE_ONETIME
@@ -464,12 +463,7 @@ void main_task(intptr_t exinf)
 	DrawProp.hlcd = hlcd;
 	lcd_init(hlcd);
 	syslog_2(LOG_NOTICE, "width(%d) height(%d)", hlcd->_width, hlcd->_height);
-	count = hcmr->_width * hcmr->_height;
-	lcd_buffer = (uint16_t *)malloc(count * 2);
-	if(lcd_buffer == NULL){
-		syslog_0(LOG_ERROR, "no lcd buffer !");
-		slp_tsk();
-	}
+
 	DrawProp.BackColor = ST7789_WHITE;
 	DrawProp.TextColor = ST7789_BLACK;
 	lcd_fillScreen(&DrawProp);
@@ -587,13 +581,7 @@ void main_task(intptr_t exinf)
 				syslog_1(LOG_NOTICE, "camera count(%d)", i);
 			ercd = ov2640_snapshot(hcmr);
 			if(ercd == E_OK){
-				uint32_t *p = (uint32_t *)hcmr->_dataBuffer;
-				uint32_t *q = (uint32_t *)lcd_buffer;
-				uint32_t *e = (uint32_t *)&lcd_buffer[count];
-				for (; q < e ; p++, q++){
-					*q = SWAP_32(*p);
-				}
-				lcd_drawPicture(hlcd, 0, 0, hcmr->_width, hcmr->_height, lcd_buffer);
+				lcd_drawPicture(hlcd, 0, 0, hcmr->_width, hcmr->_height, (uint16_t *)hcmr->_dataBuffer);
 			}
 		}
 		ov2640_activate(hcmr, false);

@@ -55,17 +55,17 @@
 /*
  *  SIL関数のマクロ定義
  */
-#define sil_orw_mem(a, b)		sil_wrw_mem((a), sil_rew_mem(a) | (b))
-#define sil_andw_mem(a, b)		sil_wrw_mem((a), sil_rew_mem(a) & ~(b))
-#define sil_modw_mem(a, b, c)	sil_wrw_mem((a), (sil_rew_mem(a) & (~b)) | (c))
+#define sil_orw_mem(a, b) sil_wrw_mem((a), sil_rew_mem(a) | (b))
+#define sil_andw_mem(a, b) sil_wrw_mem((a), sil_rew_mem(a) & ~(b))
+#define sil_modw_mem(a, b, c) sil_wrw_mem((a), (sil_rew_mem(a) & (~b)) | (c))
 
-#define DVP_CLOCK_REQ           0
-#define APB1_CLOCK_REQ          1
+#define DVP_CLOCK_REQ 0
+#define APB1_CLOCK_REQ 1
 
-#define RESET_DELAY_TIME        200
+#define RESET_DELAY_TIME 200
 
-#define DEAFULT_CLEAR_INT       (DVP_STS_FRAME_START  | DVP_STS_FRAME_START_WE | \
-                                 DVP_STS_FRAME_FINISH | DVP_STS_FRAME_FINISH_WE)
+#define DEAFULT_CLEAR_INT (DVP_STS_FRAME_START | DVP_STS_FRAME_START_WE | \
+						   DVP_STS_FRAME_FINISH | DVP_STS_FRAME_FINISH_WE)
 
 
 static DVP_Handle_t *phdvp;
@@ -73,40 +73,40 @@ static DVP_Handle_t *phdvp;
 static uint32_t
 dvp_clock_get_freq(uint8_t clock)
 {
-	uint32_t clk_sel0 = sil_rew_mem((uint32_t *)(TADR_SYSCTL_BASE+TOFF_CLK_SEL0));
-    uint32_t source = 0;
-    uint32_t result = 0;
+	uint32_t clk_sel0 = sil_rew_mem((uint32_t *)(TADR_SYSCTL_BASE + TOFF_CLK_SEL0));
+	uint32_t source = 0;
+	uint32_t result = 0;
 	uint32_t threshold = 0;
 
 	/*
 	 *  ACLKの取り出し
 	 */
-	if((clk_sel0 & SYSCTL_CLK_SEL0_ACLK_SEL) == 0)
+	if ((clk_sel0 & SYSCTL_CLK_SEL0_ACLK_SEL) == 0)
 		source = SYSCTRL_CLOCK_FREQ_IN0;
-	else{
+	else {
 		threshold = (clk_sel0 & SYSCTL_CLK_SEL0_ACLK_SDIVISER) >> 1;
 		source = get_pll_clock(0) / (2ULL << threshold);
 	}
 
-	if(clock == DVP_CLOCK_REQ){
-		threshold = sil_rew_mem((uint32_t *)(TADR_SYSCTL_BASE+TOFF_SYSCTL_CLK_TH0)) & SYSCTL_CLK_TH0_DVP_GCLK_THHD;
+	if (clock == DVP_CLOCK_REQ) {
+		threshold = sil_rew_mem((uint32_t *)(TADR_SYSCTL_BASE + TOFF_SYSCTL_CLK_TH0)) & SYSCTL_CLK_TH0_DVP_GCLK_THHD;
 		threshold >>= 12;
 	}
-	else	/* APB1 request */
+	else /* APB1 request */
 		threshold = (clk_sel0 & SYSCTL_CLK_SEL0_APB1_CLK_SEL) >> 6;
 	result = source / (threshold + 1);
 	syslog_2(LOG_NOTICE, "## dvp_clock_get_freq req(%d) result(%d) ##", clock, result);
-    return result;
+	return result;
 }
 
 static void
 dvp_sccb_start_transfer(DVP_Handle_t *hdvp)
 {
-	while(sil_rew_mem((uint32_t *)(hdvp->base+TOFF_DVP_STS)) & DVP_STS_SCCB_EN)
-        ;
-	sil_wrw_mem((uint32_t *)(hdvp->base+TOFF_DVP_STS), (DVP_STS_SCCB_EN | DVP_STS_SCCB_EN_WE));
-    while (sil_rew_mem((uint32_t *)(hdvp->base+TOFF_DVP_STS)) & DVP_STS_SCCB_EN)
-        ;
+	while (sil_rew_mem((uint32_t *)(hdvp->base + TOFF_DVP_STS)) & DVP_STS_SCCB_EN)
+		;
+	sil_wrw_mem((uint32_t *)(hdvp->base + TOFF_DVP_STS), (DVP_STS_SCCB_EN | DVP_STS_SCCB_EN_WE));
+	while (sil_rew_mem((uint32_t *)(hdvp->base + TOFF_DVP_STS)) & DVP_STS_SCCB_EN)
+		;
 }
 
 
@@ -122,17 +122,17 @@ dvp_sccb_send_data(DVP_Handle_t *hdvp, uint8_t addr, uint16_t reg_addr, uint8_t 
 {
 	uint32_t tmp;
 
-	tmp = sil_rew_mem((uint32_t *)(hdvp->base+TOFF_DVP_SCCB_CFG)) & (~DVP_SCCB_BYTE_NUM_MASK);
+	tmp = sil_rew_mem((uint32_t *)(hdvp->base + TOFF_DVP_SCCB_CFG)) & (~DVP_SCCB_BYTE_NUM_MASK);
 
 	(hdvp->Init.num_sccb_reg == 8) ? (tmp |= DVP_SCCB_BYTE_NUM_3) : (tmp |= DVP_SCCB_BYTE_NUM_4);
 
-	sil_wrw_mem((uint32_t *)(hdvp->base+TOFF_DVP_SCCB_CFG), tmp);
+	sil_wrw_mem((uint32_t *)(hdvp->base + TOFF_DVP_SCCB_CFG), tmp);
 
 	if (hdvp->Init.num_sccb_reg == 8)
 		tmp = DVP_SCCB_WRITE_DATA_ENABLE | addr | (reg_addr << 8) | (reg_data << 16);
 	else
 		tmp = DVP_SCCB_WRITE_DATA_ENABLE | addr | ((reg_addr >> 8) << 8) | ((reg_addr & 0xff) << 16) | (reg_data << 24);
-	sil_wrw_mem((uint32_t *)(hdvp->base+TOFF_DVP_SCCB_CTL), tmp);
+	sil_wrw_mem((uint32_t *)(hdvp->base + TOFF_DVP_SCCB_CTL), tmp);
 	dvp_sccb_start_transfer(hdvp);
 }
 
@@ -147,30 +147,30 @@ uint8_t dvp_sccb_receive_data(DVP_Handle_t *hdvp, uint8_t addr, uint16_t reg_add
 {
 	uint32_t tmp;
 
-	tmp = sil_rew_mem((uint32_t *)(hdvp->base+TOFF_DVP_SCCB_CFG)) & (~DVP_SCCB_BYTE_NUM_MASK);
+	tmp = sil_rew_mem((uint32_t *)(hdvp->base + TOFF_DVP_SCCB_CFG)) & (~DVP_SCCB_BYTE_NUM_MASK);
 
-    if (hdvp->Init.num_sccb_reg == 8)
+	if (hdvp->Init.num_sccb_reg == 8)
 		tmp |= DVP_SCCB_BYTE_NUM_2;
 	else
 		tmp |= DVP_SCCB_BYTE_NUM_3;
 
-	sil_wrw_mem((uint32_t *)(hdvp->base+TOFF_DVP_SCCB_CFG), tmp);
+	sil_wrw_mem((uint32_t *)(hdvp->base + TOFF_DVP_SCCB_CFG), tmp);
 
-	if(hdvp->Init.num_sccb_reg == 8)
+	if (hdvp->Init.num_sccb_reg == 8)
 		tmp = DVP_SCCB_WRITE_DATA_ENABLE | addr | (reg_addr << 8);
 	else
 		tmp = DVP_SCCB_WRITE_DATA_ENABLE | addr | ((reg_addr >> 8) << 8) | ((reg_addr & 0xff) << 16);
 
-	sil_wrw_mem((uint32_t *)(hdvp->base+TOFF_DVP_SCCB_CTL), tmp);
+	sil_wrw_mem((uint32_t *)(hdvp->base + TOFF_DVP_SCCB_CTL), tmp);
 
-    dvp_sccb_start_transfer(hdvp);
+	dvp_sccb_start_transfer(hdvp);
 
-	sil_wrw_mem((uint32_t *)(hdvp->base+TOFF_DVP_SCCB_CTL), addr);
+	sil_wrw_mem((uint32_t *)(hdvp->base + TOFF_DVP_SCCB_CTL), addr);
 
-    dvp_sccb_start_transfer(hdvp);
+	dvp_sccb_start_transfer(hdvp);
 
-	tmp = sil_rew_mem((uint32_t *)(hdvp->base+TOFF_DVP_SCCB_CFG));
-	return (uint8_t) (tmp >> 24);
+	tmp = sil_rew_mem((uint32_t *)(hdvp->base + TOFF_DVP_SCCB_CFG));
+	return (uint8_t)(tmp >> 24);
 }
 
 /*
@@ -181,15 +181,15 @@ uint8_t dvp_sccb_receive_data(DVP_Handle_t *hdvp, uint8_t addr, uint16_t reg_add
 ER
 dvp_init(DVP_Handle_t *hdvp)
 {
-    uint32_t v_apb1_clk, v_period;
+	uint32_t v_apb1_clk, v_period;
 
-	if(hdvp == NULL)
+	if (hdvp == NULL)
 		return E_PAR;
 
-	if(hdvp->Init.GMMlen > DVP_AXI_GM_MLEN_MASK || hdvp->Init.GMMlen == 0)
+	if (hdvp->Init.GMMlen > DVP_AXI_GM_MLEN_MASK || hdvp->Init.GMMlen == 0)
 		return E_PAR;
 
-	hdvp->base  = DVP_BASE_ADDR;
+	hdvp->base = DVP_BASE_ADDR;
 	hdvp->semid = DVP_SEM;
 	fpioa_set_function(hdvp->Init.CMosPClkPin, FUNC_CMOS_PCLK);
 	fpioa_set_function(hdvp->Init.CMosXClkPin, FUNC_CMOS_XCLK);
@@ -200,95 +200,95 @@ dvp_init(DVP_Handle_t *hdvp)
 	fpioa_set_function(hdvp->Init.SccbSClkPin, FUNC_SCCB_SCLK);
 	fpioa_set_function(hdvp->Init.SccbSdaPin, FUNC_SCCB_SDA);
 
-    /* Do a power cycle */
-    dvp_dcmi_powerdown(hdvp, false);
-    dly_tsk(10);
+	/* Do a power cycle */
+	dvp_dcmi_powerdown(hdvp, false);
+	dly_tsk(10);
 
-    dvp_dcmi_powerdown(hdvp, true);
-    dly_tsk(100);
+	dvp_dcmi_powerdown(hdvp, true);
+	dly_tsk(100);
 
 	/*
 	 *  DVPクロック有効化
 	 */
-	sil_orw_mem((uint32_t *)(TADR_SYSCTL_BASE+TOFF_SYSCTL_CLK_EN_CENT), SYSCTL_CLK_EN_CENT_APB1_CLK_EN);
-	sil_orw_mem((uint32_t *)(TADR_SYSCTL_BASE+TOFF_SYSCTL_CLK_EN_PERI), SYSCTL_CLK_EN_PERI_DVP_CLK_EN);
+	sil_orw_mem((uint32_t *)(TADR_SYSCTL_BASE + TOFF_SYSCTL_CLK_EN_CENT), SYSCTL_CLK_EN_CENT_APB1_CLK_EN);
+	sil_orw_mem((uint32_t *)(TADR_SYSCTL_BASE + TOFF_SYSCTL_CLK_EN_PERI), SYSCTL_CLK_EN_PERI_DVP_CLK_EN);
 
 	phdvp = hdvp;
 
 	/*
 	 *  DVPリセット
 	 */
-	sil_orw_mem((uint32_t *)(TADR_SYSCTL_BASE+TOFF_SYSCTL_PERI_RESET), SYSCTL_PERI_RESET_DVP_RESET);
+	sil_orw_mem((uint32_t *)(TADR_SYSCTL_BASE + TOFF_SYSCTL_PERI_RESET), SYSCTL_PERI_RESET_DVP_RESET);
 	dly_tsk(10);
-	sil_andw_mem((uint32_t *)(TADR_SYSCTL_BASE+TOFF_SYSCTL_PERI_RESET), SYSCTL_PERI_RESET_DVP_RESET);
+	sil_andw_mem((uint32_t *)(TADR_SYSCTL_BASE + TOFF_SYSCTL_PERI_RESET), SYSCTL_PERI_RESET_DVP_RESET);
 	dly_tsk(1);
 
 	/*
 	 *  SCCBクロック初期化
 	 */
-	sil_orw_mem((uint32_t *)(hdvp->base+TOFF_DVP_SCCB_CFG), (DVP_SCCB_SCL_LCNT_MASK | DVP_SCCB_SCL_HCNT_MASK));
+	sil_orw_mem((uint32_t *)(hdvp->base + TOFF_DVP_SCCB_CFG), (DVP_SCCB_SCL_LCNT_MASK | DVP_SCCB_SCL_HCNT_MASK));
 
-	 // Initialize dvp interface
+	// Initialize dvp interface
 	v_apb1_clk = dvp_clock_get_freq(APB1_CLOCK_REQ);
-	if(v_apb1_clk > (hdvp->Init.Freq * 2))
+	if (v_apb1_clk > (hdvp->Init.Freq * 2))
 		v_period = ((v_apb1_clk + hdvp->Init.Freq) / (hdvp->Init.Freq * 2)) - 1;
 	else
 		v_period = 0;
-	if(v_period > 255)
+	if (v_period > 255)
 		v_period = 255;
 
 	/*
 	 *  DVPリセット
 	 */
-	sil_andw_mem((uint32_t *)(hdvp->base+TOFF_DVP_CMOS_CFG), DVP_CMOS_CLK_DIV_MASK);
-	sil_orw_mem((uint32_t *)(hdvp->base+TOFF_DVP_CMOS_CFG), (DVP_CMOS_CLK_ENABLE | v_period));
+	sil_andw_mem((uint32_t *)(hdvp->base + TOFF_DVP_CMOS_CFG), DVP_CMOS_CLK_DIV_MASK);
+	sil_orw_mem((uint32_t *)(hdvp->base + TOFF_DVP_CMOS_CFG), (DVP_CMOS_CLK_ENABLE | v_period));
 	/* First power down */
-	sil_orw_mem((uint32_t *)(hdvp->base+TOFF_DVP_CMOS_CFG), DVP_CMOS_POWER_DOWN);
-	sil_dly_nse(RESET_DELAY_TIME*1000);
-	sil_andw_mem((uint32_t *)(hdvp->base+TOFF_DVP_CMOS_CFG), DVP_CMOS_POWER_DOWN);
-	sil_dly_nse(RESET_DELAY_TIME*1000);
+	sil_orw_mem((uint32_t *)(hdvp->base + TOFF_DVP_CMOS_CFG), DVP_CMOS_POWER_DOWN);
+	sil_dly_nse(RESET_DELAY_TIME * 1000);
+	sil_andw_mem((uint32_t *)(hdvp->base + TOFF_DVP_CMOS_CFG), DVP_CMOS_POWER_DOWN);
+	sil_dly_nse(RESET_DELAY_TIME * 1000);
 
 	/* Second reset */
-	sil_andw_mem((uint32_t *)(hdvp->base+TOFF_DVP_CMOS_CFG), DVP_CMOS_RESET);
-	sil_dly_nse(RESET_DELAY_TIME*1000);
-	sil_orw_mem((uint32_t *)(hdvp->base+TOFF_DVP_CMOS_CFG), DVP_CMOS_RESET);
-	sil_dly_nse(RESET_DELAY_TIME*1000);
+	sil_andw_mem((uint32_t *)(hdvp->base + TOFF_DVP_CMOS_CFG), DVP_CMOS_RESET);
+	sil_dly_nse(RESET_DELAY_TIME * 1000);
+	sil_orw_mem((uint32_t *)(hdvp->base + TOFF_DVP_CMOS_CFG), DVP_CMOS_RESET);
+	sil_dly_nse(RESET_DELAY_TIME * 1000);
 
 	/*
 	 *  バーストモード設定
 	 */
-	sil_modw_mem((uint32_t *)(hdvp->base+TOFF_DVP_CFG), DVP_CFG_BURST_SIZE_4BEATS, hdvp->Init.BurstMode);
-	sil_modw_mem((uint32_t *)(hdvp->base+TOFF_DVP_AXI), DVP_AXI_GM_MLEN_MASK, hdvp->Init.GMMlen-1);
+	sil_modw_mem((uint32_t *)(hdvp->base + TOFF_DVP_CFG), DVP_CFG_BURST_SIZE_4BEATS, hdvp->Init.BurstMode);
+	sil_modw_mem((uint32_t *)(hdvp->base + TOFF_DVP_AXI), DVP_AXI_GM_MLEN_MASK, hdvp->Init.GMMlen - 1);
 
 	/*
 	 *  オートモード設定
 	 */
-	sil_modw_mem((uint32_t *)(hdvp->base+TOFF_DVP_CFG), DVP_CFG_AUTO_ENABLE, hdvp->Init.AutoMode);
+	sil_modw_mem((uint32_t *)(hdvp->base + TOFF_DVP_CFG), DVP_CFG_AUTO_ENABLE, hdvp->Init.AutoMode);
 
 	/*
 	 *  出力有効化
 	 */
-	sil_orw_mem((uint32_t *)(hdvp->base+TOFF_DVP_CFG), DVP_CFG_AI_OUTPUT_ENABLE);
-	sil_orw_mem((uint32_t *)(hdvp->base+TOFF_DVP_CFG), DVP_CFG_DISPLAY_OUTPUT_ENABLE);
+	sil_orw_mem((uint32_t *)(hdvp->base + TOFF_DVP_CFG), DVP_CFG_AI_OUTPUT_ENABLE);
+	sil_orw_mem((uint32_t *)(hdvp->base + TOFF_DVP_CFG), DVP_CFG_DISPLAY_OUTPUT_ENABLE);
 
 	/*
 	 *  イメージフォーマット、サイズ設定
 	 */
 	dvp_set_image_format(hdvp);
-	dvp_set_image_size(hdvp);	//set QVGA default
+	dvp_set_image_size(hdvp); //set QVGA default
 
-	sil_wrw_mem((uint32_t *)(hdvp->base+TOFF_DVP_R_ADDR), hdvp->Init.RedAddr);
-	sil_wrw_mem((uint32_t *)(hdvp->base+TOFF_DVP_G_ADDR), hdvp->Init.GreenAddr);
-	sil_wrw_mem((uint32_t *)(hdvp->base+TOFF_DVP_B_ADDR), hdvp->Init.BlueAddr);
-	sil_wrw_mem((uint32_t *)(hdvp->base+TOFF_DVP_RGB_ADDR), hdvp->Init.RGBAddr);
+	sil_wrw_mem((uint32_t *)(hdvp->base + TOFF_DVP_R_ADDR), hdvp->Init.RedAddr);
+	sil_wrw_mem((uint32_t *)(hdvp->base + TOFF_DVP_G_ADDR), hdvp->Init.GreenAddr);
+	sil_wrw_mem((uint32_t *)(hdvp->base + TOFF_DVP_B_ADDR), hdvp->Init.BlueAddr);
+	sil_wrw_mem((uint32_t *)(hdvp->base + TOFF_DVP_RGB_ADDR), hdvp->Init.RGBAddr);
 
 	/*
 	 *  割込み設定
 	 */
-	sil_andw_mem((uint32_t *)(hdvp->base+TOFF_DVP_CFG), (DVP_CFG_START_INT_ENABLE | DVP_CFG_FINISH_INT_ENABLE));
+	sil_andw_mem((uint32_t *)(hdvp->base + TOFF_DVP_CFG), (DVP_CFG_START_INT_ENABLE | DVP_CFG_FINISH_INT_ENABLE));
 	dis_int(hdvp->Init.IntNo);
-	sil_orw_mem((uint32_t *)(hdvp->base+TOFF_DVP_STS), DEAFULT_CLEAR_INT);
-	sil_orw_mem((uint32_t *)(hdvp->base+TOFF_DVP_CFG), (DVP_CFG_START_INT_ENABLE | DVP_CFG_FINISH_INT_ENABLE));
+	sil_orw_mem((uint32_t *)(hdvp->base + TOFF_DVP_STS), DEAFULT_CLEAR_INT);
+	sil_orw_mem((uint32_t *)(hdvp->base + TOFF_DVP_CFG), (DVP_CFG_START_INT_ENABLE | DVP_CFG_FINISH_INT_ENABLE));
 	hdvp->state = DVP_STATE_INIT;
 	return E_OK;
 }
@@ -301,11 +301,11 @@ dvp_init(DVP_Handle_t *hdvp)
 ER
 dvp_deinit(DVP_Handle_t *hdvp)
 {
-	if(hdvp == NULL)
+	if (hdvp == NULL)
 		return E_PAR;
 
 	dis_int(hdvp->Init.IntNo);
-	sil_andw_mem((uint32_t *)(TADR_SYSCTL_BASE+TOFF_SYSCTL_CLK_EN_PERI), SYSCTL_CLK_EN_PERI_DVP_CLK_EN);
+	sil_andw_mem((uint32_t *)(TADR_SYSCTL_BASE + TOFF_SYSCTL_CLK_EN_PERI), SYSCTL_CLK_EN_PERI_DVP_CLK_EN);
 
 	phdvp = NULL;
 	hdvp->state = DVP_STATE_INIT;
@@ -321,19 +321,19 @@ dvp_deinit(DVP_Handle_t *hdvp)
 ER
 dvp_activate(DVP_Handle_t *hdvp, bool_t run)
 {
-	if(hdvp == NULL)
+	if (hdvp == NULL)
 		return E_PAR;
-	if(run){
+	if (run) {
 		hdvp->state = DVP_STATE_READY;
-		sil_orw_mem((uint32_t *)(hdvp->base+TOFF_DVP_STS), DEAFULT_CLEAR_INT);
+		sil_orw_mem((uint32_t *)(hdvp->base + TOFF_DVP_STS), DEAFULT_CLEAR_INT);
 		ena_int(hdvp->Init.IntNo);
-		sil_orw_mem((uint32_t *)(hdvp->base+TOFF_DVP_CFG), (DVP_CFG_START_INT_ENABLE | DVP_CFG_FINISH_INT_ENABLE));
+		sil_orw_mem((uint32_t *)(hdvp->base + TOFF_DVP_CFG), (DVP_CFG_START_INT_ENABLE | DVP_CFG_FINISH_INT_ENABLE));
 	}
-	else{
+	else {
 		hdvp->state = DVP_STATE_INIT;
 		dis_int(hdvp->Init.IntNo);
-		sil_orw_mem((uint32_t *)(hdvp->base+TOFF_DVP_STS), DEAFULT_CLEAR_INT);
-		sil_andw_mem((uint32_t *)(hdvp->base+TOFF_DVP_CFG), (DVP_CFG_START_INT_ENABLE | DVP_CFG_FINISH_INT_ENABLE));
+		sil_orw_mem((uint32_t *)(hdvp->base + TOFF_DVP_STS), DEAFULT_CLEAR_INT);
+		sil_andw_mem((uint32_t *)(hdvp->base + TOFF_DVP_CFG), (DVP_CFG_START_INT_ENABLE | DVP_CFG_FINISH_INT_ENABLE));
 	}
 	return E_OK;
 }
@@ -347,12 +347,12 @@ dvp_activate(DVP_Handle_t *hdvp, bool_t run)
 ER
 dvp_set_image_format(DVP_Handle_t *hdvp)
 {
-	if(hdvp == NULL)
+	if (hdvp == NULL)
 		return E_PAR;
-	if((hdvp->Init.Format & ~DVP_CFG_FORMAT_MASK) != 0)
+	if ((hdvp->Init.Format & ~DVP_CFG_FORMAT_MASK) != 0)
 		return E_PAR;
 
-	sil_modw_mem((uint32_t *)(hdvp->base+TOFF_DVP_CFG), DVP_CFG_FORMAT_MASK, hdvp->Init.Format);
+	sil_modw_mem((uint32_t *)(hdvp->base + TOFF_DVP_CFG), DVP_CFG_FORMAT_MASK, hdvp->Init.Format);
 	return E_OK;
 }
 
@@ -367,18 +367,18 @@ dvp_set_image_size(DVP_Handle_t *hdvp)
 {
 	uint32_t cfg, divw;
 
-	if(hdvp == NULL)
+	if (hdvp == NULL)
 		return E_PAR;
-	cfg  = sil_rew_mem((uint32_t *)(hdvp->base+TOFF_DVP_CFG));
+	cfg = sil_rew_mem((uint32_t *)(hdvp->base + TOFF_DVP_CFG));
 	cfg &= ~(DVP_CFG_HREF_BURST_NUM_MASK | DVP_CFG_LINE_NUM_MASK);
-    cfg |= hdvp->Init.Height << 20;
+	cfg |= hdvp->Init.Height << 20;
 
-    if((cfg & DVP_CFG_BURST_SIZE_4BEATS) != 0)
+	if ((cfg & DVP_CFG_BURST_SIZE_4BEATS) != 0)
 		divw = 4;
 	else
 		divw = 1;
 	cfg |= (hdvp->Init.Width / 8 / divw) << 12;
-    sil_wrw_mem((uint32_t *)(hdvp->base+TOFF_DVP_CFG), cfg);
+	sil_wrw_mem((uint32_t *)(hdvp->base + TOFF_DVP_CFG), cfg);
 	return E_OK;
 }
 
@@ -393,18 +393,18 @@ dvp_sccb_set_clk_rate(DVP_Handle_t *hdvp, uint32_t clk_rate)
 {
 	uint32_t sccb_cfg;
 	uint32_t v_sccb_freq = dvp_clock_get_freq(APB1_CLOCK_REQ);
-	uint16_t v_period_clk_cnt = ((v_sccb_freq+(clk_rate/2)) / clk_rate / 2);
+	uint16_t v_period_clk_cnt = ((v_sccb_freq + (clk_rate / 2)) / clk_rate / 2);
 
-	if(hdvp == NULL)
+	if (hdvp == NULL)
 		return 0;
-	if(v_period_clk_cnt > 255){
+	if (v_period_clk_cnt > 255) {
 		return 0;
 	}
 
-	sccb_cfg  = sil_rew_mem((uint32_t *)(hdvp->base+TOFF_DVP_SCCB_CFG));
-    sccb_cfg &= ~(DVP_SCCB_SCL_LCNT_MASK | DVP_SCCB_SCL_HCNT_MASK);
-    sccb_cfg |= (v_period_clk_cnt << 8) | (v_period_clk_cnt << 16);
-	sil_wrw_mem((uint32_t *)(hdvp->base+TOFF_DVP_SCCB_CFG), sccb_cfg);
+	sccb_cfg = sil_rew_mem((uint32_t *)(hdvp->base + TOFF_DVP_SCCB_CFG));
+	sccb_cfg &= ~(DVP_SCCB_SCL_LCNT_MASK | DVP_SCCB_SCL_HCNT_MASK);
+	sccb_cfg |= (v_period_clk_cnt << 8) | (v_period_clk_cnt << 16);
+	sil_wrw_mem((uint32_t *)(hdvp->base + TOFF_DVP_SCCB_CFG), sccb_cfg);
 	return dvp_clock_get_freq(DVP_CLOCK_REQ) / (v_period_clk_cnt * 2);
 }
 
@@ -417,12 +417,12 @@ dvp_sccb_set_clk_rate(DVP_Handle_t *hdvp, uint32_t clk_rate)
 ER
 dvp_dcmi_reset(DVP_Handle_t *hdvp, bool_t reset)
 {
-	if(hdvp == NULL)
+	if (hdvp == NULL)
 		return E_PAR;
-	if(reset)
-		sil_orw_mem((uint32_t *)(hdvp->base+TOFF_DVP_CMOS_CFG), DVP_CMOS_RESET);
+	if (reset)
+		sil_orw_mem((uint32_t *)(hdvp->base + TOFF_DVP_CMOS_CFG), DVP_CMOS_RESET);
 	else
-		sil_andw_mem((uint32_t *)(hdvp->base+TOFF_DVP_CMOS_CFG), DVP_CMOS_RESET);
+		sil_andw_mem((uint32_t *)(hdvp->base + TOFF_DVP_CMOS_CFG), DVP_CMOS_RESET);
 	return E_OK;
 }
 
@@ -435,12 +435,12 @@ dvp_dcmi_reset(DVP_Handle_t *hdvp, bool_t reset)
 ER
 dvp_dcmi_powerdown(DVP_Handle_t *hdvp, bool_t down)
 {
-	if(hdvp == NULL)
+	if (hdvp == NULL)
 		return E_PAR;
-	if(down)
-		sil_orw_mem((uint32_t *)(hdvp->base+TOFF_DVP_CMOS_CFG), DVP_CMOS_POWER_DOWN);
+	if (down)
+		sil_orw_mem((uint32_t *)(hdvp->base + TOFF_DVP_CMOS_CFG), DVP_CMOS_POWER_DOWN);
 	else
-		sil_andw_mem((uint32_t *)(hdvp->base+TOFF_DVP_CMOS_CFG), DVP_CMOS_POWER_DOWN);
+		sil_andw_mem((uint32_t *)(hdvp->base + TOFF_DVP_CMOS_CFG), DVP_CMOS_POWER_DOWN);
 	return E_OK;
 }
 
@@ -453,30 +453,32 @@ dvp_handler(void)
 	DVP_Handle_t *hdvp = phdvp;
 	uint32_t istatus, estatus;
 
-	if(hdvp == NULL)
+	if (hdvp == NULL) {
+		syslog_0(LOG_NOTICE, "dvp_handler hdvp == NULL");
 		return;
-	istatus = sil_rew_mem((uint32_t *)(hdvp->base+TOFF_DVP_STS));
-	if(istatus == 0)
+	}
+	istatus = sil_rew_mem((uint32_t *)(hdvp->base + TOFF_DVP_STS));
+	if (istatus == 0) {
+		syslog_0(LOG_DEBUG, "dvp_handler istatus == 0");
 		return;
+	}
 	estatus = istatus;
-	syslog_2(LOG_DEBUG, "sensor_irq istatus[%08x] hdvp->state(%d)", istatus, hdvp->state);
-	if((istatus & DVP_STS_FRAME_FINISH) != 0){	//frame end
+	syslog_2(LOG_DEBUG, "dvp_handler istatus[%08x] hdvp->state(%d)", istatus, hdvp->state);
+	if ((istatus & DVP_STS_FRAME_FINISH) != 0) { //frame end
 		estatus |= DVP_STS_FRAME_FINISH_WE;
 		hdvp->state = DVP_STATE_FINISH;
-		if(hdvp->semid != 0)
+		if (hdvp->semid != 0)
 			isig_sem(hdvp->semid);
 	}
-	if((istatus & DVP_STS_FRAME_START) != 0){	//frame start
+	if ((istatus & DVP_STS_FRAME_START) != 0) { //frame start
 		estatus |= DVP_STS_FRAME_START_WE;
-        if(hdvp->state == DVP_STATE_ACTIVATE){  //only we finish the convert, do transmit again
+		if (hdvp->state == DVP_STATE_ACTIVATE) { //only we finish the convert, do transmit again
 			/*
 			 *  コンバートスタート
 			 */
-			sil_wrw_mem((uint32_t *)(hdvp->base+TOFF_DVP_STS), DVP_STS_DVP_EN | DVP_STS_DVP_EN_WE);
+			sil_wrw_mem((uint32_t *)(hdvp->base + TOFF_DVP_STS), DVP_STS_DVP_EN | DVP_STS_DVP_EN_WE);
 			hdvp->state = DVP_STATE_STARTED;
 		}
 	}
-	sil_orw_mem((uint32_t *)(hdvp->base+TOFF_DVP_STS), estatus);
+	sil_orw_mem((uint32_t *)(hdvp->base + TOFF_DVP_STS), estatus);
 }
-
-

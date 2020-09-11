@@ -91,11 +91,11 @@ void device_info_init(intptr_t exinf)
  */
 void
 digitalWrite(uint8_t Pin, int dwVal){
-    int8_t gpio_pin = gpio_get_gpiohno(Pin, false);
+	int8_t gpio_pin = gpio_get_gpiohno(Pin, false);
 
-    if( gpio_pin >= 0){
-        gpio_set_pin(TADR_GPIOHS_BASE, (uint8_t)gpio_pin, dwVal);
-    }
+	if( gpio_pin >= 0){
+		gpio_set_pin(TADR_GPIOHS_BASE, (uint8_t)gpio_pin, dwVal);
+	}
 }
 
 /*

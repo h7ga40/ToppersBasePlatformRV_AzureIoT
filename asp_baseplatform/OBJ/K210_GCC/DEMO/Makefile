@@ -198,11 +198,6 @@ SYSSVC_COBJS := $(SYSSVC_COBJS) banner.o syslog.o serial.o logtask.o \
 SYSSVC_CFLAGS := $(SYSSVC_CFLAGS)
 SYSSVC_LIBS := $(SYSSVC_LIBS)
 INCLUDES := $(INCLUDES) -I$(SRCDIR)/pdic/k210
-#LDFLAGS := $(LDFLAGS) \
-#	-Wl,--wrap=_malloc_r \
-#	-Wl,--wrap=_calloc_r \
-#	-Wl,--wrap=_free_r \
-#	-Wl,--wrap=_realloc_r
 
 #
 #  カーネルに関する定義

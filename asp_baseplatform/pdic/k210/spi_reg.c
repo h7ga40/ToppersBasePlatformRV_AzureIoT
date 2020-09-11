@@ -62,31 +62,31 @@ ER
 spi_transmit(SPI_Handle_t *hspi, uint8_t *ptxData, uint16_t length)
 {
 	uint32_t *pTx;
-	int32_t  ss;
+	int32_t ss;
 	uint32_t i;
 	ER ercd = E_OK;
 
-	if(hspi == NULL)
+	if (hspi == NULL)
 		return E_PAR;
 	ss = hspi->Init.SsNo;
-	if(hspi->hdmatx != NULL){
+	if (hspi->hdmatx != NULL) {
 		pTx = malloc(length * sizeof(uint32_t));
-		if(pTx == NULL)
+		if (pTx == NULL)
 			return E_OBJ;
-		for(i = 0 ; i < length ; i++)
+		for (i = 0; i < length; i++)
 			pTx[i] = ptxData[i];
 	}
 	else
 		pTx = (uint32_t *)ptxData;
 
 #if SPI_WAIT_TIME != 0
-	ercd = spi_core_transmit(hspi, ss, (uint8_t*)pTx, length);
+	ercd = spi_core_transmit(hspi, ss, (uint8_t *)pTx, length);
 #else
-	if((ercd = spi_core_transmit(hspi, ss, (uint8_t*)pTx, length)) == E_OK){
+	if ((ercd = spi_core_transmit(hspi, ss, (uint8_t *)pTx, length)) == E_OK) {
 		ercd = spi_wait(hspi, 50);
 	}
 #endif
-	if(hspi->hdmatx != NULL)
+	if (hspi->hdmatx != NULL)
 		free(pTx);
 	return ercd;
 }
@@ -102,23 +102,23 @@ ER
 spi_receive(SPI_Handle_t *hspi, uint8_t *pdata, uint16_t length)
 {
 	uint32_t *pRx;
-	int32_t  ss;
+	int32_t ss;
 	uint32_t i;
-	ER  ercd = E_OK;
+	ER ercd = E_OK;
 
-	if(hspi == NULL)
+	if (hspi == NULL)
 		return E_PAR;
 	ss = hspi->Init.SsNo;
 	pRx = malloc(length * sizeof(uint32_t));
-	if(pRx == NULL)
+	if (pRx == NULL)
 		return E_OBJ;
 #if SPI_WAIT_TIME != 0
 	ercd = spi_core_receive(hspi, ss, pRx, length);
 #else
-	if((ercd = spi_core_receive(hspi, ss, pRx, length)) == E_OK)
+	if ((ercd = spi_core_receive(hspi, ss, pRx, length)) == E_OK)
 		ercd = spi_wait(hspi, 50);
 #endif
-	for(i = 0 ; i < length ; i++)
+	for (i = 0; i < length; i++)
 		pdata[i] = pRx[i];
 	free(pRx);
 	return ercd;
@@ -136,36 +136,35 @@ ER
 spi_transrecvx(SPI_Handle_t *hspi, uint8_t *ptxdata, uint8_t *prxdata, uint16_t length)
 {
 	uint32_t *pTx, *pRx;
-	int32_t  ss;
+	int32_t ss;
 	uint32_t i;
-	ER  ercd = E_OK;
+	ER ercd = E_OK;
 
-	if(hspi == NULL)
+	if (hspi == NULL)
 		return E_PAR;
 	ss = hspi->Init.SsNo;
-	if(hspi->hdmatx != NULL){
+	if (hspi->hdmatx != NULL) {
 		pRx = malloc(length * sizeof(uint32_t) * 2);
-		if(pRx == NULL)
+		if (pRx == NULL)
 			return E_OBJ;
 		pTx = pRx + length;
-		for(i = 0 ; i < length ; i++)
+		for (i = 0; i < length; i++)
 			pTx[i] = ptxdata[i];
 	}
-	else{
+	else {
 		pRx = malloc(length * sizeof(uint32_t));
-		if(pRx == NULL)
+		if (pRx == NULL)
 			return E_OBJ;
 		pTx = (uint32_t *)ptxdata;
 	}
 #if SPI_WAIT_TIME != 0
 	ercd = spi_core_transrecv(hspi, ss, (uint8_t *)pTx, (uint8_t *)pRx, length);
 #else
-	if((ercd = spi_core_transrecv(hspi, ss, (uint8_t *)pTx, (uint8_t *)pRx, length)) == E_OK)
+	if ((ercd = spi_core_transrecv(hspi, ss, (uint8_t *)pTx, (uint8_t *)pRx, length)) == E_OK)
 		ercd = spi_wait(hspi, 50);
 #endif
-	for(i = 0 ; i < length ; i++)
+	for (i = 0; i < length; i++)
 		prxdata[i] = pRx[i];
 	free(pRx);
 	return ercd;
 }
-

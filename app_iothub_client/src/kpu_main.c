@@ -63,8 +63,6 @@
 #include "kpu.h"
 #include "region_layer.h"
 
-extern void ai_dma_done_isr(DMA_Handle_t *dma);
-
 /*
 *  サービスコールのエラーのログ出力
 */
@@ -186,7 +184,7 @@ class_lable_t class_lable[CLASS_NUMBER] =
 
 static uint32_t lable_string_draw_ram[115 * 16 * 8 / 2];
 #endif
-extern uint8_t model_data[];
+extern const uint8_t model_data[];
 kpu_model_context_t g_task;
 static region_layer_t detect_rl;
 
@@ -233,9 +231,8 @@ void kpu_task(intptr_t exinf)
 	LCD_Handler_t   *hlcd;
 	OV2640_t        *hcmr;
 	DVP_Handle_t    *hdvp;
-	uint16_t        *lcd_buffer;
 	ER_UINT	ercd;
-	uint32_t i, count;
+	uint32_t i;
 	struct tm2 time;
 	unsigned long atmp;
 #ifdef SDEV_SENSE_ONETIME
@@ -370,7 +367,7 @@ void kpu_task(intptr_t exinf)
 	}
 	syslog_1(LOG_NOTICE, "OV2640 id(%d)", ov2640_id(hcmr));
 
-	Init.WorkMode     = SPI_WORK_MODE_0;
+	Init.WorkMode     = SPI_WORK_MODE_2;
 	Init.FrameFormat  = SPI_FF_OCTAL;
 	Init.DataSize     = 8;
 	Init.Prescaler    = 15000000;
@@ -384,7 +381,7 @@ void kpu_task(intptr_t exinf)
 	Init.MisoPin      = -1;
 	Init.SsPin        = SIPEED_ST7789_SS_PIN;
 	Init.SsNo         = SIPEED_ST7789_SS;
-	Init.TxDMAChannel = SIPEED_DMA_CH;
+	Init.TxDMAChannel = -1;
 	Init.RxDMAChannel = -1;
 	Init.semid        = SPI1TRN_SEM;
 	Init.semlock      = SPI1LOCK_SEM;
@@ -407,12 +404,7 @@ void kpu_task(intptr_t exinf)
 	DrawProp.hlcd = hlcd;
 	lcd_init(hlcd);
 	syslog_2(LOG_NOTICE, "width(%d) height(%d)", hlcd->_width, hlcd->_height);
-	count = hcmr->_width * hcmr->_height;
-	lcd_buffer = (uint16_t *)malloc(count * 2);
-	if(lcd_buffer == NULL){
-		syslog_0(LOG_ERROR, "no lcd buffer !");
-		slp_tsk();
-	}
+
 	DrawProp.BackColor = ST7789_WHITE;
 	DrawProp.TextColor = ST7789_BLACK;
 	lcd_fillScreen(&DrawProp);
@@ -465,31 +457,9 @@ void kpu_task(intptr_t exinf)
 	if(hsd == NULL)
 		syslog_0(LOG_ERROR, "SD-CARD INITAIL ERROR !");
 #endif
-	extern DMA_Handle_t g_ai_hdma;
-	g_ai_hdma.chnum = AI_DMA_CH;
-	g_ai_hdma.xfercallback = ai_dma_done_isr;
-	g_ai_hdma.errorcallback     = NULL;
-	g_ai_hdma.Init.Request      = DMA_SELECT_AI_RX_REQ;	/* DMA選択 */
-	g_ai_hdma.Init.Direction    = DMA_PERIPH_TO_MEMORY;	/* DMA転送方向 */
-	g_ai_hdma.Init.SrcMultBlock = DMAC_MULTBLOCK_CONT;	/* ソースマルチブロックタイプ */
-	g_ai_hdma.Init.DrcMultBlock = DMAC_MULTBLOCK_CONT;	/* デスティネーションマルチブロックタイプ */
-	g_ai_hdma.Init.SrcHandShake = DMAC_HS_HARDWARE;	/* ソースハンドシェイク */
-	g_ai_hdma.Init.DrcHandShake = DMAC_HS_SOFTWARE;	/* デスティネーションハンドシェイク */
-	g_ai_hdma.Init.SrcHwhsPol   = DMAC_HWHS_POLARITY_LOW;	/* ソースハードウェアハンドシェイク極性 */
-	g_ai_hdma.Init.DrcHwhsPol   = DMAC_HWHS_POLARITY_LOW;	/* デスティネーションハードウェアハンドシェイク極性 */
-	g_ai_hdma.Init.Priority     = 4;	/* 優先度 */
-	g_ai_hdma.Init.SrcMaster    = DMAC_MASTER1;	/* ソースマスター設定 */
-	g_ai_hdma.Init.DstMaster    = DMAC_MASTER2;	/* デスティネーションマスター設定 */
-	g_ai_hdma.Init.SrcInc       = DMAC_ADDR_NOCHANGE;	/* ソースインクリメント設定 */
-	g_ai_hdma.Init.DstInc       = DMAC_ADDR_INCREMENT;	/* デスティネーションインクリメント設定 */
-	g_ai_hdma.Init.SrcTransWidth = DMAC_TRANS_WIDTH_32;	/* ソース転送幅 */
-	g_ai_hdma.Init.DstTransWidth = DMAC_TRANS_WIDTH_32;	/* デスティネーション転送幅 */
-	g_ai_hdma.Init.SrcBurstSize = DMAC_MSIZE_4;	/* ソースバーストサイズ */
-	g_ai_hdma.Init.DstBurstSize = DMAC_MSIZE_4;	/* デスティネーションバーストサイズ */
-	g_ai_hdma.Init.IocBlkTrans  = 0;	/* IOCブロック転送 */
-	g_ai_hdma.localdata         = (void *)&g_task;
-	if ((ercd = dma_init(&g_ai_hdma)) != E_OK) {
-		syslog_0(LOG_ERROR, "AI-DMA INITAIL ERROR !");
+	if ((ercd = kpu_init(&g_task)) != E_OK) {
+		syslog_0(LOG_ERROR, "kpu init error");
+		slp_tsk();
 	}
 
 	if (kpu_load_kmodel(&g_task, model_data) != 0) {
@@ -501,7 +471,10 @@ void kpu_task(intptr_t exinf)
 	detect_rl.anchor = g_anchor;
 	detect_rl.threshold = 0.7;
 	detect_rl.nms_value = 0.3;
-	region_layer_init(&detect_rl, 10, 7, 125, 320, 240);
+	if (region_layer_init(&detect_rl, 10, 7, 125, 320, 240) != 0) {
+		syslog_0(LOG_ERROR, "region layer init error");
+		slp_tsk();
+	}
 
 	bool_t camok = true;
 	if((ercd = ov2640_activate(hcmr, true)) != E_OK){
@@ -523,13 +496,6 @@ void kpu_task(intptr_t exinf)
 			/* start to calculate */
 			atmp = (unsigned long)hcmr->_aiBuffer - IOMEM;
 			kpu_run_kmodel(&g_task, (const uint8_t *)atmp, AI_DMA_CH, ai_done, NULL);
-
-			uint32_t *p = (uint32_t *)hcmr->_dataBuffer;
-			uint32_t *q = (uint32_t *)lcd_buffer;
-			uint32_t *e = (uint32_t *)&lcd_buffer[count];
-			for (; q < e ; p++, q++){
-				*q = SWAP_32(*p);
-			}
 		}
 
 		if (g_ai_done_flag == 1) {
@@ -554,7 +520,7 @@ void kpu_task(intptr_t exinf)
 			region_layer_run(&detect_rl, NULL);
 		}
 
-		lcd_drawPicture(hlcd, 0, 0, hcmr->_width, hcmr->_height, lcd_buffer);
+		lcd_drawPicture(hlcd, 0, 0, hcmr->_width, hcmr->_height, (uint16_t *)hcmr->_dataBuffer);
 
 		/* draw boxs */
 		region_layer_draw_boxes(&detect_rl, drawboxes);

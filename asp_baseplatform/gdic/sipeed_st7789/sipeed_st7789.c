@@ -205,7 +205,7 @@ lcd_filldata(LCD_Handler_t *hlcd, uint32_t *data_buf, uint32_t len)
 void lcd_init(LCD_Handler_t *hlcd)
 {
 	GPIO_Init_t init = {0};
-    uint8_t data = 0;
+	uint8_t data[2] = {0};
 
 	/*
 	 *  DCXピン初期化
@@ -226,8 +226,8 @@ void lcd_init(LCD_Handler_t *hlcd)
 		gpio_setup(TADR_GPIO_BASE, &init, hlcd->rst_no);
 		gpio_set_pin(TADR_GPIO_BASE, hlcd->rst_no, PORT_HIGH);
 
-	    gpio_set_pin(TADR_GPIO_BASE, hlcd->rst_no, 0);
-	    gpio_set_pin(TADR_GPIO_BASE, hlcd->rst_no, 1);
+		gpio_set_pin(TADR_GPIO_BASE, hlcd->rst_no, 0);
+		gpio_set_pin(TADR_GPIO_BASE, hlcd->rst_no, 1);
 	}
 
 	/*
@@ -244,8 +244,8 @@ void lcd_init(LCD_Handler_t *hlcd)
 	 *  pixel format
 	 */
 	lcd_writecommand(hlcd, PIXEL_FORMAT_SET);
-	data = 0x55;
-    lcd_writebyte(hlcd, &data, 1);
+	data[0] = 0x55;
+	lcd_writebyte(hlcd, &data, 1);
 	if(hlcd->dir & DIR_XY_MASK){
 		hlcd->_width = ST7789_TFTHEIGHT;
 		hlcd->_height = ST7789_TFTWIDTH;
@@ -258,7 +258,12 @@ void lcd_init(LCD_Handler_t *hlcd)
 	hlcd->rowstart = 0;
 
 	lcd_writecommand(hlcd, MEMORY_ACCESS_CTL);
-    lcd_writebyte(hlcd, (uint8_t *)&hlcd->dir, 1);
+	lcd_writebyte(hlcd, (uint8_t *)&hlcd->dir, 1);
+
+	//lcd_writecommand(hlcd, RGB_IF_SIGNAL_CTL);
+	//data[0] = 0x00;
+	//data[1] = 0xF8;
+	//lcd_writebyte(hlcd, &data, 2);
 
 	/*
 	 *  display on

@@ -148,7 +148,7 @@
         {
             "label": "write app_iothub_client",
             "command": "/C/Python38/python.exe",
-                "args": [
+            "args": [
                 "../tools/kflash/kflash.py",
                 "-p",
                 "COM12",

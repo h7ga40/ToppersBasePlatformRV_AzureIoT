@@ -55,7 +55,7 @@ TEXT_START_ADDRESS = 80000000
 #
 #  リンカスクリプトの定義
 #
-LDSCRIPT = $(SRCDIR)/arch/$(PRC)_$(TOOL)/riscv64elf.ld
+LDSCRIPT = $(TARGETDIR)/kendryte-k210.ld
 
 #
 #  スタートアップモジュールに関する定義
