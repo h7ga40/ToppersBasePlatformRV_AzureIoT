@@ -8,6 +8,7 @@
 #include "kernel_cfg.h"
 #include "monitor.h"
 #include "device.h"
+#include "kpu_main.h"
 
 /*
  *  デバイスコマンド番号
@@ -54,9 +55,10 @@ static const char device_help[] =
 "          CPRX                   clear proxy  \n"
 "          WIFI                   set ssid pwd \n";
 
-#define LED_PIN       3		/* D13 */
-static const uint16_t led_pattern[1] = {
-	LED_PIN
+static const uint16_t led_pattern[] = {
+	LED_G_PIN,
+	LED_R_PIN,
+	LED_B_PIN,
 };
 
 static COMMAND_LINK device_command_link = {
@@ -87,18 +89,6 @@ void device_info_init(intptr_t exinf)
 }
 
 /*
- *  ダイレクトデジタルピン出力
- */
-void
-digitalWrite(uint8_t Pin, int dwVal){
-	int8_t gpio_pin = gpio_get_gpiohno(Pin, false);
-
-	if( gpio_pin >= 0){
-		gpio_set_pin(TADR_GPIOHS_BASE, (uint8_t)gpio_pin, dwVal);
-	}
-}
-
-/*
  *  LED設定コマンド関数
  */
 static int_t led_func(int argc, char **argv)
@@ -109,11 +99,18 @@ static int_t led_func(int argc, char **argv)
 		return -1;
 	arg1 = a2i(argv[1]);
 	arg2 = a2i(argv[2]);
-	if(arg1 >= 1 && arg1 <= 4){
-		if(arg2 != 0)
-			digitalWrite(led_pattern[arg1-1], 1);
-		else
-			digitalWrite(led_pattern[arg1-1], 0);
+	if(arg1 >= 1 && arg1 <= sizeof(led_pattern) / sizeof(led_pattern[0])){
+		if(arg2 != 0) {
+			digitalWrite(led_pattern[arg1-1], LOW);
+			syslog(LOG_NOTICE, "digitalWrite(%d,LOW)", arg1);
+		}
+		else {
+			digitalWrite(led_pattern[arg1-1], HIGH);
+			syslog(LOG_NOTICE, "digitalWrite(%d,HIGH)", arg1);
+		}
+	}
+	else{
+		syslog(LOG_NOTICE, "LED %d is not arival.", arg1);
 	}
 	return 0;
 }

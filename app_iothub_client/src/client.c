@@ -22,6 +22,7 @@ and removing calls to _DoWork will yield the same results. */
 #include "serializer.h"
 #include "serializer_devicetwin.h"
 #include "client.h"
+#include "kpu_main.h"
 
 #ifdef _MSC_VER
 extern int sprintf_s(char* dst, size_t dstSizeInBytes, const char* format, ...);
@@ -40,7 +41,6 @@ char* connectionString = NULL;
 
 bool g_use_proxy;
 HTTP_PROXY_OPTIONS g_proxy_options;
-int ledOn;
 
 static int callbackCounter;
 static bool g_continueRunning;
@@ -132,12 +132,11 @@ static IOTHUBMESSAGE_DISPOSITION_RESULT ReceiveMessageCallback(IOTHUB_MESSAGE_HA
 }
 
 // Define the Model
-BEGIN_NAMESPACE(WeatherStation);
+BEGIN_NAMESPACE(SecurityStation);
 
-DECLARE_MODEL(ContosoAnemometer,
-WITH_DATA(double, windSpeed),
-WITH_DATA(double, temperature),
-WITH_DATA(double, humidity),
+DECLARE_MODEL(ContosoSecurityCamera,
+WITH_DATA(int, is_person),
+WITH_DATA(int, is_car),
 WITH_METHOD(quit),
 WITH_METHOD(turnLedOn),
 WITH_METHOD(turnLedOff)
@@ -152,19 +151,19 @@ DECLARE_STRUCT(ThresholdR,
 	ascii_char_ptr, status
 );
 
-DECLARE_DEVICETWIN_MODEL(AnemometerState,
+DECLARE_DEVICETWIN_MODEL(SecurityCameraState,
 WITH_REPORTED_PROPERTY(ThresholdR, threshold)
 );
 
-DECLARE_DEVICETWIN_MODEL(AnemometerSettings,
+DECLARE_DEVICETWIN_MODEL(SecurityCameraSettings,
 WITH_DESIRED_PROPERTY(ThresholdD, threshold, onDesiredThreshold)
 );
 
-END_NAMESPACE(WeatherStation);
+END_NAMESPACE(SecurityStation);
 
 void anemometerReportedStateCallback(int status_code, void* userContextCallback)
 {
-	AnemometerState *anemometer = (AnemometerState *)userContextCallback;
+	SecurityCameraState *anemometer = (SecurityCameraState *)userContextCallback;
 
 	printf("received states \033[43m%d\033[49m, reported threshold = %.1f\n", status_code, anemometer->threshold.value);
 }
@@ -173,15 +172,15 @@ void onDesiredThreshold(void* argument)
 {
 	// Note: The argument is NOT a pointer to threshold, but instead a pointer to the MODEL
 	//       that contains threshold as one of its arguments.  In this case, it
-	//       is AnemometerSettings*.
+	//       is SecurityCameraSettings*.
 
-	AnemometerSettings *anemometer = (AnemometerSettings *)argument;
+	SecurityCameraSettings *anemometer = (SecurityCameraSettings *)argument;
 	printf("received a new desired.threshold = \033[42m%.1f\033[49m\n", anemometer->threshold.value);
 
 	g_twinReport = true;
 }
 
-METHODRETURN_HANDLE quit(ContosoAnemometer* device)
+METHODRETURN_HANDLE quit(ContosoSecurityCamera* device)
 {
 	(void)device;
 	(void)printf("quit with Method.\r\n");
@@ -192,23 +191,27 @@ METHODRETURN_HANDLE quit(ContosoAnemometer* device)
 	return result;
 }
 
-METHODRETURN_HANDLE turnLedOn(ContosoAnemometer* device)
+METHODRETURN_HANDLE turnLedOn(ContosoSecurityCamera* device)
 {
 	(void)device;
 	(void)printf("\033[41mTurning LED on with Method.\033[49m\r\n");
 
-	ledOn = 1;
+	digitalWrite(LED_G_PIN, LOW);
+	digitalWrite(LED_R_PIN, LOW);
+	digitalWrite(LED_B_PIN, LOW);
 
 	METHODRETURN_HANDLE result = MethodReturn_Create(1, "{\"Message\":\"Turning fan on with Method\"}");
 	return result;
 }
 
-METHODRETURN_HANDLE turnLedOff(ContosoAnemometer* device)
+METHODRETURN_HANDLE turnLedOff(ContosoSecurityCamera* device)
 {
 	(void)device;
 	(void)printf("\033[44mTurning LED off with Method.\033[49m\r\n");
 
-	ledOn = 0;
+	digitalWrite(LED_G_PIN, HIGH);
+	digitalWrite(LED_R_PIN, HIGH);
+	digitalWrite(LED_B_PIN, HIGH);
 
 	METHODRETURN_HANDLE result = MethodReturn_Create(0, "{\"Message\":\"Turning fan off with Method\"}");
 	return result;
@@ -314,7 +317,7 @@ void iothub_client_run(int proto)
 		{
 			(void)printf("Failed in serializer_init.");
 		}
-		else if (SERIALIZER_REGISTER_NAMESPACE(WeatherStation) == NULL)
+		else if (SERIALIZER_REGISTER_NAMESPACE(SecurityStation) == NULL)
 		{
 			LogError("unable to SERIALIZER_REGISTER_NAMESPACE");
 		}
@@ -388,25 +391,25 @@ void iothub_client_run(int proto)
 					printf("failure to set option \"TrustedCerts\"\r\n");
 				}
 #endif // SET_TRUSTED_CERT_IN_SAMPLES
-				AnemometerState *anemometerState = IoTHubDeviceTwin_LL_CreateAnemometerState(iotHubClientHandle);
+				SecurityCameraState *anemometerState = IoTHubDeviceTwin_LL_CreateSecurityCameraState(iotHubClientHandle);
 				if (anemometerState == NULL)
 				{
-					printf("Failure in IoTHubDeviceTwin_LL_CreateAnemometerState");
+					printf("Failure in IoTHubDeviceTwin_LL_CreateSecurityCameraState");
 				}
 				else
 				{
-					(void)printf("IoTHubDeviceTwin_LL_CreateAnemometerState...successful.\r\n");
+					(void)printf("IoTHubDeviceTwin_LL_CreateSecurityCameraState...successful.\r\n");
 				}
-				AnemometerSettings *anemometerSettings = IoTHubDeviceTwin_LL_CreateAnemometerSettings(iotHubClientHandle);
+				SecurityCameraSettings *anemometerSettings = IoTHubDeviceTwin_LL_CreateSecurityCameraSettings(iotHubClientHandle);
 				if (anemometerSettings == NULL)
 				{
-					printf("Failure in IoTHubDeviceTwin_LL_CreateAnemometerSettings");
+					printf("Failure in IoTHubDeviceTwin_LL_CreateSecurityCameraSettings");
 				}
 				else
 				{
-					(void)printf("IoTHubDeviceTwin_LL_CreateAnemometerSettings...successful.\r\n");
+					(void)printf("IoTHubDeviceTwin_LL_CreateSecurityCameraSettings...successful.\r\n");
 				}
-				ContosoAnemometer* myWeather = CREATE_MODEL_INSTANCE(WeatherStation, ContosoAnemometer);
+				ContosoSecurityCamera* myWeather = CREATE_MODEL_INSTANCE(SecurityStation, ContosoSecurityCamera);
 				if (myWeather == NULL)
 				{
 					(void)printf("Failed on CREATE_MODEL_INSTANCE\r\n");
@@ -439,10 +442,10 @@ void iothub_client_run(int proto)
 						int msgPos = msg_id % MESSAGE_COUNT;
 						unsigned char *msgText;
 						size_t msgSize;
-						myWeather->windSpeed = avgWindSpeed + (rand() % 4 + 2);
-						myWeather->temperature = minTemperature + (rand() % 10);
-						myWeather->humidity = minHumidity + (rand() % 20);
-						if (SERIALIZE(&msgText, &msgSize, myWeather->windSpeed, myWeather->temperature, myWeather->humidity) != CODEFIRST_OK)
+						myWeather->is_person = yolo_result.person;
+						myWeather->is_car = yolo_result.car;
+						yolo_result.reset = 1;
+						if (SERIALIZE(&msgText, &msgSize, myWeather->is_person, myWeather->is_car) != CODEFIRST_OK)
 						{
 							(void)printf("Failed to serialize\r\n");
 						}
@@ -458,8 +461,8 @@ void iothub_client_run(int proto)
 							messages[msgPos].messageTrackingId = msg_id;
 
 							propMap = IoTHubMessage_Properties(messages[msgPos].messageHandle);
-							(void)sprintf_s(propText, sizeof(propText), myWeather->temperature > anemometerSettings->threshold.value ? "true" : "false");
-							if (Map_AddOrUpdate(propMap, "temperatureAlert", propText) != MAP_OK)
+							(void)sprintf_s(propText, sizeof(propText), (yolo_result.person > 0) ? "true" : "false");
+							if (Map_AddOrUpdate(propMap, "personAlert", propText) != MAP_OK)
 							{
 								(void)printf("ERROR: Map_AddOrUpdate Failed!\r\n");
 							}
@@ -486,7 +489,7 @@ void iothub_client_run(int proto)
 						g_twinReport = false;
 						anemometerState->threshold.value = anemometerSettings->threshold.value;
 						anemometerState->threshold.status = "success";
-						IoTHubDeviceTwin_LL_SendReportedStateAnemometerState(anemometerState, anemometerReportedStateCallback, anemometerState);
+						IoTHubDeviceTwin_LL_SendReportedStateSecurityCameraState(anemometerState, anemometerReportedStateCallback, anemometerState);
 					}
 					iterator++;
 
@@ -503,9 +506,9 @@ void iothub_client_run(int proto)
 				}
 
 				if (anemometerSettings != NULL)
-					IoTHubDeviceTwin_LL_DestroyAnemometerSettings(anemometerSettings);
+					IoTHubDeviceTwin_LL_DestroySecurityCameraSettings(anemometerSettings);
 				if (anemometerState != NULL)
-					IoTHubDeviceTwin_LL_DestroyAnemometerState(anemometerState);
+					IoTHubDeviceTwin_LL_DestroySecurityCameraState(anemometerState);
 				if (myWeather != NULL)
 					DESTROY_MODEL_INSTANCE(myWeather);
 				IoTHubClient_LL_Destroy(iotHubClientHandle);

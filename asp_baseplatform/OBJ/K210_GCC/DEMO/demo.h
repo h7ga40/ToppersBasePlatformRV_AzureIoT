@@ -86,7 +86,7 @@
 #define SPI_MISO_PIN  26
 #define SPI_MOSI_PIN  28
 #define SPI_SS_PIN    29
-#define LED_PIN       3		/* D13 */
+#define LED_PIN       13
 
 #define SPI_PORTID    SPI1_PORTID
 #define INHNO_SPI     IRQ_VECTOR_SPI0	/* 割込みハンドラ番号 */

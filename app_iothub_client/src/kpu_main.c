@@ -147,7 +147,17 @@ pinMode(uint8_t Pin, uint8_t dwMode){
 	return ;
 }
 
-void digitalWrite(uint8_t Pin, int dwVal);
+/*
+ *  ダイレクトデジタルピン出力
+ */
+void
+digitalWrite(uint8_t Pin, int dwVal){
+    int8_t gpio_pin = gpio_get_gpiohno(Pin, false);
+
+    if( gpio_pin >= 0){
+        gpio_set_pin(TADR_GPIOHS_BASE, (uint8_t)gpio_pin, dwVal);
+    }
+}
 
 #if (CLASS_NUMBER > 1)
 typedef struct
@@ -187,6 +197,8 @@ static uint32_t lable_string_draw_ram[115 * 16 * 8 / 2];
 extern const uint8_t model_data[];
 kpu_model_context_t g_task;
 static region_layer_t detect_rl;
+yolo_result_t yolo_result;
+yolo_result_t yolo_result_frame;
 
 volatile uint8_t g_ai_done_flag;
 
@@ -219,6 +231,10 @@ static void drawboxes(uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2, uint32
 #else
 	lcd_drawRect(&DrawProp, x1, y1, x2, y2, 2, ST7789_RED);
 #endif
+	if (strcmp(class_lable[class].str, "person") == 0)
+		yolo_result_frame.person++; 
+	if (strcmp(class_lable[class].str, "car") == 0)
+		yolo_result_frame.car++; 
 }
 
 /*
@@ -246,7 +262,12 @@ void kpu_task(intptr_t exinf)
 	SVC_PERROR(syslog_msk_log(LOG_UPTO(LOG_INFO), LOG_UPTO(LOG_EMERG)));
 	syslog(LOG_NOTICE, "Sample program starts (exinf = %d).", (int_t) exinf);
 
-	pinMode(LED_PIN, OUTPUT);
+	pinMode(LED_G_PIN, OUTPUT);
+	digitalWrite(LED_G_PIN, HIGH);
+	pinMode(LED_R_PIN, OUTPUT);
+	digitalWrite(LED_R_PIN, HIGH);
+	pinMode(LED_B_PIN, OUTPUT);
+	digitalWrite(LED_B_PIN, HIGH);
 
 	select_spi0_dvp_mode(1);
 
@@ -522,8 +543,21 @@ void kpu_task(intptr_t exinf)
 
 		lcd_drawPicture(hlcd, 0, 0, hcmr->_width, hcmr->_height, (uint16_t *)hcmr->_dataBuffer);
 
+		yolo_result_frame.person = 0;
+		yolo_result_frame.car = 0;
+
 		/* draw boxs */
 		region_layer_draw_boxes(&detect_rl, drawboxes);
+
+		if (yolo_result.reset) {
+			yolo_result.reset = 0;
+			yolo_result.person = 0;
+			yolo_result.car = 0;
+		}
+		if (yolo_result.person < yolo_result_frame.person)
+			yolo_result.person = yolo_result_frame.person;
+		if (yolo_result.car < yolo_result_frame.car)
+			yolo_result.car = yolo_result_frame.car;
 	}
 	ov2640_activate(hcmr, false);
 

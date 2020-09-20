@@ -85,7 +85,9 @@
 #define SPI_MISO_PIN  26
 #define SPI_MOSI_PIN  28
 #define SPI_SS_PIN    29
-#define LED_PIN       3		/* D13 */
+#define LED_G_PIN     12
+#define LED_R_PIN     13
+#define LED_B_PIN     14
 
 #define SPI_PORTID    SPI1_PORTID
 #define INHNO_SPI     IRQ_VECTOR_SPI0	/* 割込みハンドラ番号 */
@@ -132,6 +134,14 @@
 
 #ifndef TOPPERS_MACRO_ONLY
 
+typedef struct yolo_result_t {
+	int reset;
+	int person;
+	int car;
+} yolo_result_t;
+
+extern yolo_result_t yolo_result;
+
 /*
  *  ヒープ領域の設定
  */
@@ -144,5 +154,7 @@ extern intptr_t heap_param[2];
 extern void kpu_task(intptr_t exinf);
 extern void heap_init(intptr_t exinf);
 extern void ai_done_isr(intptr_t exinf);
+extern void pinMode(uint8_t Pin, uint8_t dwMode);
+extern void digitalWrite(uint8_t Pin, int dwVal);
 
 #endif /* TOPPERS_MACRO_ONLY */
