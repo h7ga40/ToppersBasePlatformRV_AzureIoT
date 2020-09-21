@@ -72,6 +72,7 @@ default_int_handler(unsigned long mcause, void *p_excinf)
 {
 	unsigned long mstatus = *(((uintptr_t*)p_excinf) + P_EXCINF_OFFSET_MSTATUS);
 	uintptr_t     pc      = *(((uintptr_t*)p_excinf) + P_EXCINF_OFFSET_PC);
+	uintptr_t     sp      = *(((uintptr_t*)p_excinf) + P_EXCONF_OFFSET_SP);
 	unsigned long excno   = mcause & MCAUSE_CAUSE;
 
 	if((long)mcause < 0)
@@ -110,8 +111,15 @@ default_int_handler(unsigned long mcause, void *p_excinf)
 		break;
 	}
 
-	syslog(LOG_EMERG, "Excno = 0x%02X, PC = 0x%X, mstatus = 0x%X, p_excinf = 0x%X",
-		   excno, pc, mstatus, p_excinf);
+	syslog(LOG_EMERG, "Excno = 0x%02X, PC = 0x%X, mstatus = 0x%X, sp = 0x%X, p_excinf = 0x%X",
+		excno, pc, mstatus, sp, p_excinf);
+
+	unsigned int *addr = (unsigned int *)((sp + 15) / 16);
+	syslog(LOG_EMERG, "%08X:%08X %08X %08X %08X", (unsigned int)&addr[-4], addr[-4], addr[-3], addr[-2], addr[-1]);
+	syslog(LOG_EMERG, "%08X:%08X %08X %08X %08X", (unsigned int)&addr[ 0], addr[ 0], addr[ 1], addr[ 2], addr[ 3]);
+	syslog(LOG_EMERG, "%08X:%08X %08X %08X %08X", (unsigned int)&addr[ 4], addr[ 4], addr[ 5], addr[ 6], addr[ 7]);
+	syslog(LOG_EMERG, "%08X:%08X %08X %08X %08X", (unsigned int)&addr[ 8], addr[ 8], addr[ 9], addr[10], addr[11]);
+	syslog(LOG_EMERG, "%08X:%08X %08X %08X %08X", (unsigned int)&addr[12], addr[12], addr[13], addr[14], addr[15]);
 
 	target_exit();
 }
