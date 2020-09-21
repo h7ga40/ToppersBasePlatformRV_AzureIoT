@@ -297,9 +297,6 @@ void iothub_client_run(int proto)
 
 	EVENT_INSTANCE messages[MESSAGE_COUNT];
 	int msg_id = 0;
-	double avgWindSpeed = 10.0;
-	double minTemperature = 20.0;
-	double minHumidity = 60.0;
 	int receiveContext = 0;
 
 	g_continueRunning = true;

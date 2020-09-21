@@ -166,13 +166,13 @@ APPL_CFG = main.cfg
 APPL_DIR := $(APPLDIR) $(SRCDIR)/library
 APPL_ASMOBJS :=
 ifdef USE_CXX
-	APPL_CXXOBJS := $(APPL_CXXOBJS) main.o
-	APPL_COBJS := $(APPL_COBJS) client.o code.o envcmd.o command.o esp_at_socket.o kpu_main.o region_layer.o kpu.o
+	APPL_CXXOBJS := $(APPL_CXXOBJS)
+	APPL_COBJS := $(APPL_COBJS) main.o client.o code.o envcmd.o command.o esp_at_socket.o kpu_main.o region_layer.o kpu.o
 else
 	APPL_COBJS := $(APPL_COBJS) main.o client.o code.o envcmd.o command.o esp_at_socket.o kpu_main.o region_layer.o kpu.o
 endif
 APPL_COBJS := $(APPL_COBJS) log_output.o vasyslog.o t_perror.o strerror.o stub.o yolo.o
-APPL_CFLAGS := $(APPL_CFLAGS) -D___src_yolo_kmodel=model_data -D___src_yolo_kmodel_len=model_size
+APPL_CFLAGS := $(APPL_CFLAGS)
 APPL_LIBS =
 ifdef APPLDIR
 	INCLUDES := $(INCLUDES) $(foreach dir,$(APPLDIR),-I$(dir))
