@@ -60,6 +60,10 @@
 #include "azure_c_shared_utility/esp_at_socket.h"
 #include "azure_c_shared_utility/optimize_size.h"
 
+#ifdef _MSC_VER
+extern int sprintf_s(char* dst, size_t dstSizeInBytes, const char* format, ...);
+#endif // _MSC_VER
+
 //#define AT_DEBUG
 time_t MINIMUM_YEAR;
 
@@ -1486,7 +1490,7 @@ retry:
 			break;
 		}
 
-		sprintf(temp, "AT+CWJAP=\"%s\",\"%s\"\r\n", esp_state->ssid, esp_state->pwd);
+		sprintf_s(temp, sizeof(temp), "AT+CWJAP=\"%s\",\"%s\"\r\n", esp_state->ssid, esp_state->pwd);
 		ret = esp_serial_write(esp_state, temp, &res_kind, 20000);
 		if ((ret != E_OK) || (res_kind != at_response_kind_ok)) {
 			printf("connect wifi error %s %d\n", itron_strerror(ret), res_kind);
@@ -1494,7 +1498,7 @@ retry:
 		}
 		esp_state->esp_state = esp_state_update_time;
 	case esp_state_update_time:
-		sprintf(temp, "AT+CIPSNTPCFG=%d,%d,\"%s\"\r\n", 1, 9, "ntp.nict.jp");
+		sprintf_s(temp, sizeof(temp), "AT+CIPSNTPCFG=%d,%d,\"%s\"\r\n", 1, 9, "ntp.nict.jp");
 		ret = esp_serial_write(esp_state, temp, &res_kind, 10000);
 		if ((ret != E_OK) || (res_kind != at_response_kind_ok)) {
 			printf("ntp config error %s %d\n", itron_strerror(ret), res_kind);
@@ -1590,8 +1594,8 @@ int esp_at_socket_connect(ESP_AT_SOCKET_HANDLE espAtSocketHandle, const char *ho
 	connection->state = connection_state_connecting;
 
 	ER ret;
-	char temp[64];
-	sprintf(temp, "AT+CIPSTART=%d,\"%s\",\"%s\",%d\r\n", connection->link_id, connection->ssl, host, port);
+	char temp[128];
+	sprintf_s(temp, sizeof(temp), "AT+CIPSTART=%d,\"%s\",\"%s\",%d\r\n", connection->link_id, connection->ssl, host, port);
 	ret = esp_serial_write(connection->esp_state, temp, &res_kind, 10000);
 	if ((ret != E_OK) || (res_kind != at_response_kind_connect)) {
 		printf("connect error connect %s %d\n", itron_strerror(ret), res_kind);
@@ -1629,7 +1633,7 @@ void esp_at_socket_close(ESP_AT_SOCKET_HANDLE espAtSocketHandle)
 
 	ER ret;
 	char temp[64];
-	sprintf(temp, "AT+CIPCLOSE=%d\r\n", connection->link_id);
+	sprintf_s(temp, sizeof(temp), "AT+CIPCLOSE=%d\r\n", connection->link_id);
 	ret = esp_serial_write(connection->esp_state, temp, &res_kind, 10000);
 	if (ret == E_OK) {
 		if (res_kind == at_response_kind_closed) {
@@ -1655,7 +1659,7 @@ int esp_at_socket_send(ESP_AT_SOCKET_HANDLE espAtSocketHandle, const char *data,
 
 	ER ret;
 	char temp[64];
-	sprintf(temp, "AT+CIPSEND=%d,%d\r\n", connection->link_id, length);
+	sprintf_s(temp, sizeof(temp), "AT+CIPSEND=%d,%d\r\n", connection->link_id, length);
 	ret = esp_serial_write(connection->esp_state, temp, &res_kind, 10000);
 	if ((ret != E_OK) || (res_kind != at_response_kind_ok)) {
 		printf("send error command %s %d\n", itron_strerror(ret), res_kind);
