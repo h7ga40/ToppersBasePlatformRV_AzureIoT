@@ -429,12 +429,24 @@ bool proc_atc_res(esp_serial_state_t *esp_state, int c)
 				esp_state->parse_state = at_crlf;
 				return false;
 			}
+#ifdef AT_DEBUG
+			else{
+				append_char(esp_state, '\0');
+				printf("\"%s\"\r\n", esp_state->string);
+			}
+#endif
 		}
 		else if (isalpha(c) || isdigit(c) || c == ' ') {
 			append_char(esp_state, c);
 			esp_state->parse_state = at_response;
 			return false;
 		}
+#ifdef AT_DEBUG
+		else{
+			append_char(esp_state, '\0');
+			printf("\"%s\"\r\n", esp_state->string);
+		}
+#endif
 		break;
 	case at_link_id:
 		if (isdigit(c)) {
@@ -637,7 +649,7 @@ bool proc_atc_res(esp_serial_state_t *esp_state, int c)
 	}
 #ifdef AT_DEBUG
 	if (esp_state->parse_state != at_none)
-		printf("\033[35mparse error. state:%d\033[0m\r\n", esp_state->parse_state);
+		printf("\033[35mparse error. state:%d, char:%d\033[0m\r\n", esp_state->parse_state, c);
 #endif
 	esp_state->parse_state = at_none;
 	esp_state->response = NULL;
