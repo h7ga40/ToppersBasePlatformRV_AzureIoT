@@ -72,54 +72,88 @@ default_int_handler(unsigned long mcause, void *p_excinf)
 {
 	unsigned long mstatus = *(((uintptr_t*)p_excinf) + P_EXCINF_OFFSET_MSTATUS);
 	uintptr_t     pc      = *(((uintptr_t*)p_excinf) + P_EXCINF_OFFSET_PC);
-	uintptr_t     sp      = *(((uintptr_t*)p_excinf) + P_EXCONF_OFFSET_SP);
+	uintptr_t     sp0     = *(((uintptr_t*)p_excinf) + P_EXCONF_OFFSET_SP);
+	uintptr_t     sp1     = *(((uintptr_t*)p_excinf) + P_EXCONF_OFFSET_SP + 1);
 	unsigned long excno   = mcause & MCAUSE_CAUSE;
+	static int count = 0;
+
+	if (count == 0) {
+		count++;
 
 	if((long)mcause < 0)
 		excno += TMAX_MACHNE_INTNO / 2;
 
-	switch (excno) {
-	case EXC_INSTRUCTION_ADDRESS_MISALIGNED:
-		syslog(LOG_EMERG, "\nUnregistered instruction address misaligned occurs.");
-		break;
-	case EXC_INSTRUCTION_ADDRESS_FAULT:
-		syslog(LOG_EMERG, "\nUnregistered instruction address fault occurs.");
-		break;
-	case EXC_ILLEGAL_INSTRUCTION:
-		syslog(LOG_EMERG, "\nUnregistered illegal instruction occurs.");
-		break;
-	case EXC_BREAKPOINT:
-		syslog(LOG_EMERG, "\nUnregistered breakpoint occurs.");
-		break;
-	case EXC_LOAD_ADDRESS_MISALIGNED:
-		syslog(LOG_EMERG, "\nUnregistered load address misaligned occurs.");
-		break;
-	case EXC_LOAD_ADDRESS_FAULT:
-		syslog(LOG_EMERG, "\nUnregistered load address fault occurs.");
-		break;
-	case EXC_STORE_AMO_ADDRESS_MISALIGNED:
-		syslog(LOG_EMERG, "\nUnregistered store AMO address misaligned occurs.");
-		break;
-	case EXC_STORE_AMO_ACCESS_FAUT:
-		syslog(LOG_EMERG, "\nUnregistered store AMO access faut occurs.");
-		break;
-	case EXC_ENVIRONMENT_CALL_FROM_MMODE:
-		syslog(LOG_EMERG, "\nUnregistered environment call from MMODE occurs.");
-		break;
-	default:
-		syslog(LOG_EMERG, "\nUnregistered Interrupt occurs.");
-		break;
+		switch (excno) {
+		case EXC_INSTRUCTION_ADDRESS_MISALIGNED:
+				syslog_0(LOG_EMERG, "\nUnregistered instruction address misaligned occurs.");
+			break;
+		case EXC_INSTRUCTION_ADDRESS_FAULT:
+				syslog_0(LOG_EMERG, "\nUnregistered instruction address fault occurs.");
+			break;
+		case EXC_ILLEGAL_INSTRUCTION:
+				syslog_0(LOG_EMERG, "\nUnregistered illegal instruction occurs.");
+			break;
+		case EXC_BREAKPOINT:
+				syslog_0(LOG_EMERG, "\nUnregistered breakpoint occurs.");
+			break;
+		case EXC_LOAD_ADDRESS_MISALIGNED:
+				syslog_0(LOG_EMERG, "\nUnregistered load address misaligned occurs.");
+			break;
+		case EXC_LOAD_ADDRESS_FAULT:
+				syslog_0(LOG_EMERG, "\nUnregistered load address fault occurs.");
+			break;
+		case EXC_STORE_AMO_ADDRESS_MISALIGNED:
+				syslog_0(LOG_EMERG, "\nUnregistered store AMO address misaligned occurs.");
+			break;
+		case EXC_STORE_AMO_ACCESS_FAUT:
+				syslog_0(LOG_EMERG, "\nUnregistered store AMO access faut occurs.");
+			break;
+		case EXC_ENVIRONMENT_CALL_FROM_MMODE:
+				syslog_0(LOG_EMERG, "\nUnregistered environment call from MMODE occurs.");
+			break;
+		default:
+				syslog_0(LOG_EMERG, "\nUnregistered Interrupt occurs.");
+			break;
+		}
+
+		syslog_4(LOG_EMERG, "Excno = 0x%02X, PC = 0x%X, mstatus = 0x%X, p_excinf = 0x%X",
+			excno, pc, mstatus, p_excinf);
+
+		syslog_3(LOG_EMERG, "SP0 = 0x%X, SP1 = 0x%X, runtsk = 0x%X", sp0, sp1, p_runtsk->p_tinib->task);
+
+		unsigned int *addr = (((unsigned int *)p_excinf) + P_EXCONF_OFFSET_SP + 3);
+		syslog_5(LOG_EMERG, "a0%x:%08X%08X %08X%08X", 0, addr[0], addr[1], addr[2], addr[3]); addr+=4;
+		syslog_5(LOG_EMERG, "a0%x:%08X%08X %08X%08X", 2, addr[0], addr[1], addr[2], addr[3]); addr+=4;
+		syslog_5(LOG_EMERG, "a0%x:%08X%08X %08X%08X", 4, addr[0], addr[1], addr[2], addr[3]); addr+=4;
+		syslog_5(LOG_EMERG, "a0%x:%08X%08X %08X%08X", 6, addr[0], addr[1], addr[2], addr[3]); addr+=4;
+		syslog_5(LOG_EMERG, "a0%x:%08X%08X %08X%08X", 8, addr[0], addr[1], addr[2], addr[3]); addr+=4;
+		syslog_5(LOG_EMERG, "a1%x:%08X%08X %08X%08X", 0, addr[0], addr[1], addr[2], addr[3]); addr+=4;
+		syslog_5(LOG_EMERG, "a1%x:%08X%08X %08X%08X", 2, addr[0], addr[1], addr[2], addr[3]); addr+=4;
+		syslog_5(LOG_EMERG, "a1%x:%08X%08X %08X%08X", 4, addr[0], addr[1], addr[2], addr[3]); addr+=4;
+		syslog_5(LOG_EMERG, "a1%x:%08X%08X %08X%08X", 6, addr[0], addr[1], addr[2], addr[3]); addr+=4;
+		syslog_5(LOG_EMERG, "a1%x:%08X%08X %08X%08X", 8, addr[0], addr[1], addr[2], addr[3]); addr+=4;
+		syslog_5(LOG_EMERG, "a1%x:%08X%08X %08X%08X",10, addr[0], addr[1], addr[2], addr[3]); addr+=4;
+		syslog_5(LOG_EMERG, "a2%x:%08X%08X %08X%08X", 0, addr[0], addr[1], addr[2], addr[3]); addr+=4;
+		syslog_5(LOG_EMERG, "a2%x:%08X%08X %08X%08X", 2, addr[0], addr[1], addr[2], addr[3]); addr+=4;
+		syslog_5(LOG_EMERG, "a2%x:%08X%08X %08X%08X", 4, addr[0], addr[1], addr[2], addr[3]); addr+=4;
+		syslog_5(LOG_EMERG, "a2%x:%08X%08X %08X%08X", 6, addr[0], addr[1], addr[2], addr[3]); addr+=4;
+		syslog_5(LOG_EMERG, "a2%x:%08X%08X %08X%08X", 8, addr[0], addr[1], addr[2], addr[3]); addr+=4;
+		syslog_5(LOG_EMERG, "a2%x:%08X%08X %08X%08X",10, addr[0], addr[1], addr[2], addr[3]); addr+=4;
+
+		addr = (unsigned int *)((sp0 + 15) / 16);
+		syslog_5(LOG_EMERG, "%08X:%08X %08X %08X %08X", (unsigned int)&addr[-4], addr[-4], addr[-3], addr[-2], addr[-1]);
+		syslog_5(LOG_EMERG, "%08X:%08X %08X %08X %08X", (unsigned int)&addr[ 0], addr[ 0], addr[ 1], addr[ 2], addr[ 3]);
+		syslog_5(LOG_EMERG, "%08X:%08X %08X %08X %08X", (unsigned int)&addr[ 4], addr[ 4], addr[ 5], addr[ 6], addr[ 7]);
+		syslog_5(LOG_EMERG, "%08X:%08X %08X %08X %08X", (unsigned int)&addr[ 8], addr[ 8], addr[ 9], addr[10], addr[11]);
+		syslog_5(LOG_EMERG, "%08X:%08X %08X %08X %08X", (unsigned int)&addr[12], addr[12], addr[13], addr[14], addr[15]);
+
+		addr = (unsigned int *)((sp1 + 15) / 16);
+		syslog_5(LOG_EMERG, "%08X:%08X %08X %08X %08X", (unsigned int)&addr[-4], addr[-4], addr[-3], addr[-2], addr[-1]);
+		syslog_5(LOG_EMERG, "%08X:%08X %08X %08X %08X", (unsigned int)&addr[ 0], addr[ 0], addr[ 1], addr[ 2], addr[ 3]);
+		syslog_5(LOG_EMERG, "%08X:%08X %08X %08X %08X", (unsigned int)&addr[ 4], addr[ 4], addr[ 5], addr[ 6], addr[ 7]);
+		syslog_5(LOG_EMERG, "%08X:%08X %08X %08X %08X", (unsigned int)&addr[ 8], addr[ 8], addr[ 9], addr[10], addr[11]);
+		syslog_5(LOG_EMERG, "%08X:%08X %08X %08X %08X", (unsigned int)&addr[12], addr[12], addr[13], addr[14], addr[15]);
 	}
-
-	syslog(LOG_EMERG, "Excno = 0x%02X, PC = 0x%X, mstatus = 0x%X, sp = 0x%X, p_excinf = 0x%X",
-		excno, pc, mstatus, sp, p_excinf);
-
-	unsigned int *addr = (unsigned int *)((sp + 15) / 16);
-	syslog(LOG_EMERG, "%08X:%08X %08X %08X %08X", (unsigned int)&addr[-4], addr[-4], addr[-3], addr[-2], addr[-1]);
-	syslog(LOG_EMERG, "%08X:%08X %08X %08X %08X", (unsigned int)&addr[ 0], addr[ 0], addr[ 1], addr[ 2], addr[ 3]);
-	syslog(LOG_EMERG, "%08X:%08X %08X %08X %08X", (unsigned int)&addr[ 4], addr[ 4], addr[ 5], addr[ 6], addr[ 7]);
-	syslog(LOG_EMERG, "%08X:%08X %08X %08X %08X", (unsigned int)&addr[ 8], addr[ 8], addr[ 9], addr[10], addr[11]);
-	syslog(LOG_EMERG, "%08X:%08X %08X %08X %08X", (unsigned int)&addr[12], addr[12], addr[13], addr[14], addr[15]);
 
 	target_exit();
 }
