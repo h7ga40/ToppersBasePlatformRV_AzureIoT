@@ -597,6 +597,9 @@ JSON_DECODER_RESULT JSONDecoder_JSON_To_MultiTree(char* json, MULTITREE_HANDLE* 
             /* Codes_SRS_JSON_DECODER_99_038:[ If any MultiTree API fails, JSONDecoder_JSON_To_MultiTree shall return JSON_DECODER_MULTITREE_FAILED.] */
             result = JSON_DECODER_MULTITREE_FAILED;
         }
+        else if (strcmp(json, "null") == 0) {
+            result = JSON_DECODER_OK;
+        }
         else
         {
             result = ParseJSON(json, *multiTreeHandle);
